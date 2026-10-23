@@ -1,4 +1,4 @@
-# Night Shift
+# Молчи до шести (Hush Till Six)
 
 Бесплатная интерактивная хоррор-игра в браузере: https://yompix.github.io
 
