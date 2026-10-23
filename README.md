@@ -1,4 +1,4 @@
-# Молчи до шести (Hush Till Six)
+# Hush Till Six (Молчи до шести)
 
 Бесплатная интерактивная хоррор-игра в браузере: https://yompix.github.io
 
