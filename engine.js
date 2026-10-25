@@ -71,9 +71,11 @@ async function load(onp) {
   let done = 0; const total = SNDS.length + 2 + 7 * 4, tick = (n = 1) => onp(Math.min(1, (done += n) / total));   // модели тяжёлые: каждая считается за 4
   // 3D-мир строится кодом прямо здесь; заодно прогреваем шейдеры, чтобы первая сцена не дёргалась
   const models = window.__W3chars && window.__W3chars.load ? window.__W3chars.load(() => tick(4)).catch(() => false) : Promise.resolve(false);
-  const world = models.then(() => new Promise(r => setTimeout(() => { try { if (window.World && World.init()) { World.vhs = VHS_LV[LS.get('vhs', vhsDef())] ?? .7; World.warm(); } } catch (e) { console.error(e); } worldTried = true; tick(); r(); }, 30)));
+  const world = Promise.all([models, Promise.resolve(window.NS_FONTS).catch(() => null)]).then(() => new Promise(r => setTimeout(() => { try { if (window.World && World.init()) { World.vhs = VHS_LV[LS.get('vhs', vhsDef())] ?? .7; World.warm(); } } catch (e) { console.error(e); } worldTried = true; tick(); r(); }, 30)));   // иероглифы (NSCJK) — до текстур с надписями
+  // версии timing_<язык>.json — поднимать при каждой новой нарезке/сборке (кэш браузера)
+  const TIMV = { en: 12, uk: 4, es: 2, pt: 2, de: 2, fr: 1, it: 1, pl: 1, tr: 1, zh: 1, ja: 1, ko: 1 };
   // сначала тайминги: по ним sndUrl решает, где лежит реплика (английские — в snd/en/); иначе пролог грузился русским
-  const tm = get(EN ? 'timing_' + LNG + '.json?v=' + (LNG === 'en' ? 12 : 2) : 'timing.json?v=17', 'json').then(j => { TIM = j || {}; tick(); }).catch(tick);
+  const tm = get(EN ? 'timing_' + LNG + '.json?v=' + (TIMV[LNG] || 1) : 'timing.json?v=17', 'json').then(j => { TIM = j || {}; tick(); }).catch(tick);
   const sn = SNDS.map(k => tm.then(() => get(sndUrl(k), 'arraybuffer')).then(b => { rawSnd[k] = b; tick(); }).catch(tick));
   await Promise.all([world, ...sn, tm]);
   // остальные реплики (их много) докачиваются в фоне, уже во время игры — очередью по 4, в порядке сцен; нужные сейчас встают вперёд (voiceReady)
@@ -506,14 +508,14 @@ function nextBeat() {
   bDur = Math.max(t + (beat.pad || .3), 1.2);
   // склейки по словам: cutAt — слова первой реплики (regexp, русское|английское), на которых меняется план cams; без них планы делят кадр поровну
   bCuts = null;
-  if (beat.cutAt && sched.length) { const it = sched[0], w = (TIM[it.k] || {}).w || [];
+  if (beat.cutAt && sched.length) { const it = sched[0], w = (TIM[it.k] || {}).ew || (TIM[it.k] || {}).w || [];   // ew — слова английской записи (языки без своей озвучки): склейка ровно на звучащем слове
     bCuts = [0, ...beat.cutAt.map((re, i) => { const r = new RegExp(re, 'i'), hit = w.find(x => r.test(x[1])); return hit ? it.t + hit[0] : bDur * (i + 1) / (beat.cutAt.length + 1); })];
     for (let i = 1; i < bCuts.length; i++) bCuts[i] = Math.max(bCuts[i], bCuts[i - 1] + .5); }
   // реакции тела (кивнул / покачал головой): react = { КТО: [что, с секунды, по секунду] } или [что, [реплика, слово-regexp, доля реплики], сколько секунд] — к слову,
   // а не к секунде кадра: в английской и украинской версии слова звучат в другое время («это не она» — качает головой на «это не она», а не за секунду до)
   reactW = null;
   if (beat.react) { reactW = {}; for (const who in beat.react) { const r = beat.react[who]; let a = r[1] ?? 0, b = r[2] ?? 1e9;
-    if (Array.isArray(a)) { const it = sched.find(x => x.k === a[0]), re = new RegExp(a[1], 'i'), w = it && ((TIM[it.k] || {}).w || []).find(x => re.test(x[1])); a = w ? it.t + w[0] : it ? it.t + (a[2] || 0) * it.d : 0; b = a + (r[2] ?? 2); }   // слова нет (новый язык) — доля реплики a[2]
+    if (Array.isArray(a)) { const it = sched.find(x => x.k === a[0]), re = new RegExp(a[1], 'i'), w = it && ((TIM[it.k] || {}).ew || (TIM[it.k] || {}).w || []).find(x => re.test(x[1])); a = w ? it.t + w[0] : it ? it.t + (a[2] || 0) * it.d : 0; b = a + (r[2] ?? 2); }   // слова нет (новый язык) — доля реплики a[2]
     reactW[who] = [r[0], a, b]; } }
   // смс на телефон: баннер сверху; кадр не кончится, пока её не дочитать
   for (const m of [].concat(beat.sms || [])) { const at = m.at ?? .5; trig.push({ at, fn: () => showSms(m) }); bDur = Math.max(bDur, at + 3.2); }
@@ -1320,6 +1322,8 @@ function fitHd(host) {   // заголовок экрана настроек —
   const h = host.querySelector('.sets-hd h1'), x = host.querySelector('.sets-hd .sx'); if (!h || !x) return;
   for (let i = 0; i < 10 && h.getBoundingClientRect().right > x.getBoundingClientRect().left - 4; i++) h.style.fontSize = (parseFloat(getComputedStyle(h).fontSize) * .92).toFixed(1) + 'px';
 }
+// видеокарта (world.js, GPU) — мелко внизу настроек: по ней графика выбрана при первом запуске; пригодится, если игрок пришлёт снимок экрана с ошибкой
+const gpuName = () => { const g = window.__W3core && window.__W3core.GPU; return FINE && g && g.name ? '<br>GPU: ' + g.name.replace(/[<>&"]/g, '') : ''; };
 function settings(from = 'menu') {   // from: 'menu' — из главного меню, 'pause' — из паузы в игре (настройки поверх игры, без выхода)
   const row = (id, name, val) => `<button class="set" id="${id}"><span>${tr(name)}</span><b>${tr(val)}</b></button>`;
   const vh = LS.get('vhs', vhsDef());
@@ -1327,7 +1331,7 @@ function settings(from = 'menu') {   // from: 'menu' — из главного �
   host.innerHTML = `<div class="screen sub sets-scr"><div class="sets-hd"><h1>${tr('НАСТРОЙКИ')}</h1><button class="sx" id="sX" aria-label="${tr('Назад')}">${ICON.x}</button></div><div class="sets">
     ${row('sLang', 'Язык', (window.NS_LANG_NAMES || {})[LNG] || (EN ? 'ENGLISH' : 'РУССКИЙ'))}
     ${row('sLand', 'Экран', LAND ? 'ГОРИЗОНТАЛЬНО' : 'ВЕРТИКАЛЬНО')}
-    ${row('sGfx', 'Графика', window.World && World.cine ? 'КИНО' : 'РЕТРО')}
+    ${row('sGfx', 'Графика', window.World && World.ultra ? 'УЛЬТРА' : window.World && World.cine ? 'КИНО' : 'РЕТРО')}
     ${row('sVoice', 'Озвучка', voiceOn() ? 'ВКЛ' : 'ВЫКЛ')}
     <div class="vols">${[['all', 'Громкость'], ['mus', 'Музыка'], ['voice', 'Голоса'], ['sfx', 'Звуки'], ['amb', 'Дождь и фон']].map(([k, n]) => `<div class="vol ${k}"><span>${tr(n)}</span><input type="range" min="0" max="100" step="5" value="${Math.round(VOL[k] * 100)}" data-k="${k}" aria-label="${tr(n)}"><b>${Math.round(VOL[k] * 100)}</b>${k === 'all' ? `<button class="mute${LS.get('mute', false) ? ' muted' : ''}" id="sMute" aria-label="${tr('Звук')}">${ICON.snd}</button>` : ''}</div>`).join('')}</div>
     ${row('sVhs', 'Плёнка VHS', VHS_N[vh] || VHS_N[2])}
@@ -1335,7 +1339,7 @@ function settings(from = 'menu') {   // from: 'menu' — из главного �
     ${row('sAuto', 'Реплики сами', auto ? 'ВКЛ' : 'ВЫКЛ')}
     ${row('sLook', FINE ? 'Оглядываться мышью' : 'Оглядываться наклоном', lookOn() ? 'ВКЛ' : 'ВЫКЛ')}
     ${DESK && DESK.isFull ? row('sFull', 'Во весь экран', DESK.isFull() ? 'ВКЛ' : 'ВЫКЛ') + row('sBg', 'Звук в фоне', DESK.bgSound() ? 'ВКЛ' : 'ВЫКЛ') : ''}</div>
-    <small>${tr('«Кино» — тени, блики, объёмный свет (для ПК). «Ретро» — плёнка и пиксели, легче для телефона. Без озвучки остаются субтитры.')}${FINE ? '<br>' + tr('Клавиши: F — весь экран, O — повернуть экран, V — озвучка, M — звук.') : ''}</small><button class="btn ghost" id="mBack">${tr('Назад')}</button></div>`;
+    <small>${tr('«Кино» — тени, блики, объёмный свет (для ПК). «Ретро» — плёнка и пиксели, легче для телефона. Без озвучки остаются субтитры.')}${FINE ? '<br>' + tr('Клавиши: F — весь экран, O — повернуть экран, V — озвучка, M — звук.') : ''}${gpuName()}</small><button class="btn ghost" id="mBack">${tr('Назад')}</button></div>`;
   const back = () => { uiSnd('back'); from === 'pause' ? pauseMenu() : menu(); };
   $('mBack').onclick = $('sX').onclick = back; fitHd(host);
   const re = () => { uiSnd(); settings(from); };
@@ -1346,7 +1350,7 @@ function settings(from = 'menu') {   // from: 'menu' — из главного �
   $('sLang').onclick = () => { uiSnd(); langPick(from); };
   $('sLook').onclick = () => { LS.set('look', !lookOn()); re(); };
   $('sLand').onclick = () => { LS.set('land3', !LAND); applyLand(!LAND); re(); };
-  $('sGfx').onclick = () => { LS.set('gfx', window.World && World.cine ? 'retro' : 'cine'); LS.set('gfxAuto', 2); reloadKeep(from); };   // графика собирается при загрузке; выбрал сам — автопроверка больше не вмешивается
+  $('sGfx').onclick = () => { const W = window.World || {}; LS.set('gfx', W.ultra ? 'retro' : W.cine ? (FINE ? 'ultra' : 'retro') : 'cine'); LS.set('gfxAuto', 2); reloadKeep(from); };   // ПК: Кино → Ультра → Ретро; телефон: Кино ⇄ Ретро   // графика собирается при загрузке; выбрал сам — автопроверка больше не вмешивается
   $('sVhs').onclick = () => { const v = (LS.get('vhs', vhsDef()) + 2) % 3; LS.set('vhs', v); if (window.World) World.vhs = VHS_LV[v]; re(); };
   $('sCalm').onclick = () => { LS.set('calm', !calm()); re(); };
   $('sAuto').onclick = () => { auto = !auto; LS.set('auto', auto); $('bAuto').classList.toggle('on', auto); re(); };
@@ -1354,7 +1358,7 @@ function settings(from = 'menu') {   // from: 'menu' — из главного �
 }
 function langPick(from) {   // выбор языка списком; выбранный — с перезагрузкой (надписи в 3D-мире рисуются при загрузке), игра продолжится с того же места
   const host = from === 'pause' ? pzEl : uiEl, N = window.NS_LANG_NAMES || {};
-  host.innerHTML = `<div class="screen sub sets-scr"><div class="sets-hd"><h1>${tr('Язык').toUpperCase()}</h1><button class="sx" id="sX" aria-label="${tr('Назад')}">${ICON.x}</button></div><div class="sets langs">
+  host.innerHTML = `<div class="screen sub sets-scr"><div class="sets-hd"><h1>${tr('Язык').toLocaleUpperCase(LNG)}</h1><button class="sx" id="sX" aria-label="${tr('Назад')}">${ICON.x}</button></div><div class="sets langs">
     ${(window.NS_LANGS || ['ru', 'en']).map(l => `<button class="set" data-l="${l}"><span>${N[l] || l.toUpperCase()}</span><b>${l === LNG ? ICON.ok : ''}</b></button>`).join('')}</div><button class="btn ghost" id="mBack">${tr('Назад')}</button></div>`;
   $('mBack').onclick = $('sX').onclick = () => { uiSnd('back'); settings(from); }; fitHd(host);
   host.querySelectorAll('[data-l]').forEach(b => { b.onclick = () => { if (b.dataset.l === LNG) { uiSnd('back'); settings(from); } else { LS.set('lang', b.dataset.l);
@@ -1675,8 +1679,8 @@ function phoneIn(P, t) {   // экран телефона в координат�
   }
   g.textAlign = 'left';
 }
-function wrapText(s, x0, y0, maxW, lh, maxL) { const ws = s.split(' '); let line = '', n = 0;
-  for (const wd of ws) { const tst = line ? line + ' ' + wd : wd; if (g.measureText(tst).width > maxW && line) { g.fillText(line, x0, y0 + n * lh); line = wd; if (++n >= maxL) return; } else line = tst; }
+function wrapText(s, x0, y0, maxW, lh, maxL) { const cj = /^(zh|ja)$/.test(LNG), ws = cj ? [...s] : s.split(' '); let line = '', n = 0;   // китайский и японский без пробелов — перенос по знакам
+  for (const wd of ws) { if (cj && !line && wd === ' ') continue; const tst = line ? line + (cj ? '' : ' ') + wd : wd; if (g.measureText(tst).width > maxW && line) { g.fillText(line, x0, y0 + n * lh); line = wd; if (++n >= maxL) return; } else line = tst; }
   if (line) g.fillText(line, x0, y0 + n * lh); }
 function rr(x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); g.fill(); }
 // пред-кадр: застывший прошлый кадр; перед скримером он тонет в темноте, у fx 'glitch' — окно «соединение потеряно»
@@ -1710,8 +1714,9 @@ function say(who, text, k) {   // печатающийся текст
 const chunkCache = {};
 function chunks(k, w) {   // куски из таймингов без знаков препинания: берём те же слова из полного текста реплики
   if (chunkCache[k]) return chunkCache[k];
-  // слово полного текста = столько же слов, сколько в нём частей без знаков («05:40» — две); тире прилипает к соседнему куску
-  const toks = ((TIM[k] || {}).t || '').split(/\s+/).filter(Boolean).map(s => [s, s.replace(/[.,:—?!…«»]/g, ' ').split(/\s+/).filter(Boolean).length]);
+  if (/^(zh|ja)$/.test(LNG)) return (chunkCache[k] = w.map(x => x[1]));   // без пробелов: куски тайминга (build.js cjkWords) уже со знаками препинания
+  // слово полного текста = столько же слов, сколько в нём частей без знаков («05:40», «кто-то» — две, как режет voice.py); тире прилипает к соседнему куску
+  const toks = ((TIM[k] || {}).t || '').split(/\s+/).filter(Boolean).map(s => [s, s.replace(/[.,:;—?!…«»"()\-¿¡„“”]/g, ' ').split(/\s+/).filter(Boolean).length]);
   let j = 0, debt = 0;
   const out = w.map(x => { let n = x[1].split(/\s+/).length - debt; const part = []; debt = 0;
     while (j < toks.length && (n > 0 || toks[j][1] === 0)) { part.push(toks[j][0]); n -= toks[j][1]; j++; }
@@ -1720,7 +1725,7 @@ function chunks(k, w) {   // куски из таймингов без знак�
 }
 function sayWords(who, words, on) {   // озвученная реплика целиком, произнесённые слова ярче
   const key = who + '|' + on + '|' + words.join(' '); if (key === lastSubKey) return; lastSubKey = key;
-  plate(who); dlgEl.querySelector('.ln').innerHTML = words.map((w, i) => `<span class="${i < on ? 'on' : ''}">${w}</span>`).join(' ');
+  plate(who); dlgEl.querySelector('.ln').innerHTML = words.map((w, i) => `<span class="${i < on ? 'on' : ''}">${w}</span>`).join(/^(zh|ja)$/.test(LNG) ? '' : ' ');   // китайский и японский — без пробелов между кусками
 }
 let camHud = false;
 function setCamHud(on) { if (on !== camHud) { camHud = on; clockEl.classList.toggle('dim', on); } }   // на экране камеры время показывает сама камера
