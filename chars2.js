@@ -1029,17 +1029,31 @@ function seatFeet(C, k = 1) {
   footFloor(C);
 }
 const SOFTC = new Set(['Idle_Loop', 'Idle_Talking_Loop', 'Walk_Loop', 'Sitting_Idle_Loop', 'Sitting_Talking_Loop', 'Crouch_Idle_Loop', 'Crouch_Fwd_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop']);
-function act3Body(C, P, tt, dt) {
+// фоновые петли (стоит, говорит руками, сидит, моет): у них свои часы. Время кадра стоит, пока игра ждёт нажатия в конце реплики, —
+// раньше все в этот момент замирали статуями (живыми оставались только глаза). Склейка без смены ракурса (вопрос → ответ, тот же план ближе)
+// начинает время кадра с нуля — фон идёт дальше, поза не прыгает. Позы, у которых время стоит с самого начала кадра (STILL, «замер»), не трогаем
+const AMB = /^(Idle_Loop|Idle_Talking_Loop|Sitting_Idle_Loop|Sitting_Talking_Loop|Crouch_Idle_Loop|Idle_TalkingPhone_Loop|Idle_Torch_Loop|Idle_FoldArms_Loop|Cmu_Mop_Loop)$/;
+function ambClock(C, list, dT, cut) {
+  const c0 = list.find(c => AMB.test(c[0])); if (!c0) { C.ambP = null; return list; }
+  if (cut || C.ambP == null) { C.ambO = 0; C.ambMv = false; }
+  else { const d = c0[1] - C.ambP;   // время кадра и часы игры идут от одних часов: в обычном кадре d = dT
+    if (Math.abs(d - dT) < .02) { if (d > 1e-4) C.ambMv = true; }   // время кадра идёт
+    else if (C.ambMv) C.ambO += dT - d; }                            // встало (ждём нажатия) или прыгнуло (склейка того же ракурса) — фон не замирает
+  C.ambP = c0[1];
+  return C.ambO ? list.map(c => AMB.test(c[0]) ? [c[0], c[1] + C.ambO, c[2], c[3]] : c) : list;
+}
+function act3Body(C, P, tt, dt, dT = dt, cut = false) {
   if (C.clip !== '§') { C.mixer.stopAllAction(); C.acts3 = C.acts3 || {}; for (const k in C.acts3) C.acts3[k].on3 = false; C.act = null; C.clip = '§'; }
   buildHands();
   const CL = C.clips || CLIP, used = new Set();
   let list = P.clips || [['Idle_Loop', tt, 1]];
+  if (!P.still && !C.o.monster && !window.__NOLIFE) list = ambClock(C, list, dT, cut);
   if (P.talk) {   // говорит — стойка плавно переходит в «говорит руками» и обратно (паузы между словами не сбивают)
     const on = tt < (C.talkT || -1) ? 1 : 0; C.talkW = lerp(C.talkW ?? on, on, Math.min(1, (dt || 0) * 3));
-    const TK = { Idle_Loop: 'Idle_Talking_Loop', Sitting_Idle_Loop: 'Sitting_Talking_Loop' };
-    list = list.flatMap(c => TK[c[0]] ? [[c[0], c[1], (c[2] ?? 1) * (1 - C.talkW)], [TK[c[0]], c[1], (c[2] ?? 1) * C.talkW]] : [c]);
+    const TK = { Idle_Loop: 'Idle_Talking_Loop', Sitting_Idle_Loop: 'Sitting_Talking_Loop' }, tw = C.talkW * (P.talkK ?? 1);   // talkK < 1 — руки заняты делом (показывает, держит): «говорит руками» тише
+    list = list.flatMap(c => TK[c[0]] ? [[c[0], c[1], (c[2] ?? 1) * (1 - tw)], [TK[c[0]], c[1], (c[2] ?? 1) * tw]] : [c]);
   }
-  { const rc = C.react && REACT[C.react];   // реакция по реплике вплетается в позу: кивок («Yes» — один раз, потом держим), «нет» и руки скрещены — петлёй
+  { const rc = C.reactBody && !(alive(C) && HEADREACT.has(C.reactBody)) && REACT[C.reactBody];   // реакция по реплике вплетается в позу: кивок («Yes» — один раз, потом держим), «нет» и руки скрещены — петлёй (у живых «да»/«нет» — головой, headLife)
     C.reactW = lerp(C.reactW ?? 0, rc ? 1 : 0, Math.min(1, (dt || 0) * 4)); if (rc) { if (C.reactClip !== rc) C.reactT0 = tt; C.reactClip = rc; }
     if (C.reactW > .01 && C.reactClip) list = [...list.map(c => [c[0], c[1], (c[2] ?? 1) * (1 - C.reactW)]), [C.reactClip, /_Loop$/.test(C.reactClip) ? tt : tt - (C.reactT0 ?? tt), C.reactW]];
     else C.reactClip = null; }
@@ -1066,13 +1080,15 @@ function act3Body(C, P, tt, dt) {
       pel.parent.updateWorldMatrix(true, false); pel.position.copy(pel.parent.worldToLocal(wp)); pel.updateWorldMatrix(false, true); }
     for (const [sd, wpos, wq] of feet) { const lp = C.root.worldToLocal(wpos.clone()); ik2(C, 'thigh_' + sd, 'calf_' + sd, 'foot_' + sd, lp.x, lp.y, lp.z, [sd === 'l' ? .15 : -.15, 0, 1]); keepWorld(C, 'foot_' + sd, wq); }
   }
+  if (!P.still) breathe(C, tt, dT);   // до касаний рук: ладони останутся там, где их поставил кадр
   if (!C.o.monster && list.every(c => SOFTC.has(c[0])))   // обычная стойка, речь, ходьба, сидя: кисти мягкие (если кадр не задал пальцы и в руке ничего нет)
-    for (const sd of ['l', 'r']) if (!(P.fing && P.fing[sd]) && !(P.hold && P.hold[sd])) setFingers(C, sd, 'soft', 1);
+    for (const sd of ['l', 'r']) if (!(P.fing && P.fing[sd]) && !(P.hold && P.hold[sd])) { setFingers(C, sd, 'soft', 1); if (!P.still) fingerLife(C, sd, tt); }
   if (P.fing) for (const sd of ['l', 'r']) if (P.fing[sd]) setFingers(C, sd, P.fing[sd][0], P.fing[sd][1] ?? 1);
   if (P.wig) for (const [bn, ax, a] of P.wig) wiggle(C, bn, ax, a);
   if (P.twist) { C.root.updateWorldMatrix(true, true); const up = new T.Vector3(0, 1, 0).applyQuaternion(C.root.getWorldQuaternion(new T.Quaternion()));
     for (const [bn, f] of [['spine_01', .25], ['spine_02', .35], ['spine_03', .4]]) { const b = C.bone[bn]; const wq = b.getWorldQuaternion(new T.Quaternion()).premultiply(new T.Quaternion().setFromAxisAngle(up, P.twist * f)); setWorldQ(b, wq); } }
   if (P.spine) leanTo(C, P.spine.to, P.spine.k ?? .4);
+  if (P.gest) gestBeat(C, P, tt, dT);
   if (P.arm) for (const sd of ['l', 'r']) if (P.arm[sd]) reachArm(C, sd, P.arm[sd]);
   if (P.heels != null) heelFloor(C, P.heels);   // heels — высота пола (корень сидящего бывает приподнят над полом)
   if (P.after) P.after(C, tt);
@@ -1088,19 +1104,125 @@ function wearProp(C, name, [bone, off, rot]) {
   M.decompose(pr.obj.position, pr.obj.quaternion, _hv); pr.obj.visible = true; pr.C = C; pr.sd = 'wear'; pr.g = name;
 }
 
+/* ---------- живое поверх клипа: дыхание, пальцы, голова, взгляд (tools/anim/ANIMATION.md) ---------- */
+// кто живой: Жилец, тело и «подделки» с серой кожей не дышат и не ёрзают — их неподвижность и есть улика
+const alive = C => !window.__NOLIFE && !C.o.monster && !C.o.dead && !(C.o.grey > .3) && !C.o.jerk;   // window.__NOLIFE = 1 — сравнить без живого слоя
+const _bx = new T.Vector3(), _bq = new T.Quaternion(), _bq2 = new T.Quaternion(), _be = new T.Vector3();
+// повернуть кость на угол вокруг оси в осях персонажа (x — влево, y — вверх, z — вперёд). Ось переводится в оси кости — матрицы потомков
+// не пересчитываются здесь (их пересчитают касания рук, IK и рендер), так дешевле на слабом телефоне
+function rotChar(C, bn, ax, ay, az, ang) {
+  const b = C.bone[bn]; if (!b || !ang) return;
+  C.root.getWorldQuaternion(_bq2); _bx.set(ax, ay, az).applyQuaternion(_bq2);
+  b.getWorldQuaternion(_bq); _bx.applyQuaternion(_bq.invert());
+  b.quaternion.multiply(_bq2.setFromAxisAngle(_bx, ang));
+}
+// дыхание: на вдохе грудь чуть раскрывается, плечи поднимаются. Спокойно ~14 вдохов в минуту, в страхе — чаще и глубже,
+// затаил дыхание («тсс», оцепенел) — едва-едва; пока говорит — мельче (воздух уходит на слова)
+function breathe(C, tt, dT) {
+  if (!alive(C)) return;
+  const fs = C.fsNow || {}, scared = !!(fs.wide || fs.dart || fs.scream), held = !!fs.press;
+  const amp = (held ? .2 * (1 - clamp(fs.press, 0, 1)) : scared ? 1.6 : 1) * (C.talk > .06 ? .5 : 1);   // «тсс», оцепенел (press 1) — не дышит совсем
+  C.brPh = (C.brPh ?? rnd() * 6.3) + dT * (held ? .1 : scared ? .42 : .23) * 2 * Math.PI;
+  C.brA = C.brA == null ? amp : lerp(C.brA, amp, Math.min(1, dT * 1.5));
+  const s = Math.sin(C.brPh), inh = (s > 0 ? s : s * .7) * C.brA;   // вдох короче и заметнее выдоха
+  if (Math.abs(inh) < 1e-3) return;
+  rotChar(C, 'spine_02', 1, 0, 0, -.006 * inh); rotChar(C, 'spine_03', 1, 0, 0, -.014 * inh);
+  rotChar(C, 'clavicle_l', 0, 0, 1, .03 * inh); rotChar(C, 'clavicle_r', 0, 0, 1, -.03 * inh);
+}
+// пальцы не каменные: свободная кисть чуть «дышит» — каждый палец медленно сгибается на 1–3° сам по себе
+function fingerLife(C, sd, tt) {
+  if (!alive(C)) return; const ph = C.t0 * 3.1 + (sd === 'l' ? 1.7 : 0);
+  for (let i = 0; i < 4; i++) { const a = .035 * Math.sin(tt * (.31 + i * .07) + ph + i * 1.3) + .018 * Math.sin(tt * .83 + i * 2.1 + ph);
+    for (let j = 2; j <= 3; j++) { const b = C.bone[FING[i] + '_0' + j + '_' + sd]; if (b) b.quaternion.multiply(_Q3.setFromAxisAngle(_D.set(1, 0, 0), a)); } }
+}
+// жест на ударном слоге для свободной руки в позе без разговорного клипа (сидит на полу, на корточках): P.gest = 'r' | 'l' | 'lr'.
+// Кисть приподнимается и подаётся к собеседнику на 5–9 см за 0,15 с и возвращается за ~0,5 с; поворот кисти в мире сохраняется
+const _gh = new T.Vector3(), _gq = new T.Quaternion();
+function gestBeat(C, P, tt, dT) {
+  const g = C.gst || (C.gst = { t: 9, d: .6, a: 0, sd: 'r', next: 0 });
+  if (C.onset && tt > g.next && rnd() < .55) { const s = P.gest.length > 1 ? (rnd() < .5 ? 'l' : 'r') : P.gest; g.t = 0; g.d = .55 + rnd() * .25; g.a = .6 + rnd() * .4; g.sd = s; g.next = tt + g.d + .2 + rnd() * .5; }
+  g.t += dT; if (g.t >= g.d || !alive(C)) return;
+  const u = g.t, e = (u < .15 ? ease3(u / .15) : 1 - ease3((u - .15) / (g.d - .15))) * g.a, sd = g.sd, sx = sd === 'l' ? 1 : -1;
+  const hb = C.bone['hand_' + sd]; if (!hb) return; C.root.updateWorldMatrix(true, true);
+  hb.getWorldQuaternion(_gq); const h = C.root.worldToLocal(hb.getWorldPosition(_gh));
+  ik2(C, 'upperarm_' + sd, 'lowerarm_' + sd, 'hand_' + sd, h.x + sx * .025 * e, h.y + .055 * e, h.z + .07 * e, [sx * .8, -1, -.3]);
+  keepWorld(C, 'hand_' + sd, _gq);
+}
+const ease3 = k => k * k * (3 - 2 * k);
+// направление, повёрнутое по горизонтали (yaw) и вертикали (pitch) — в осях мира
+function offDir(v, yaw, pitch) {
+  if (!yaw && !pitch) return v;
+  const h = Math.hypot(v.x, v.z) || 1e-6, a = Math.atan2(v.x, v.z) + yaw, e = clamp(Math.atan2(v.y, h) + pitch, -1.45, 1.45), c = Math.cos(e);
+  return v.set(Math.sin(a) * c, Math.sin(e), Math.cos(a) * c);
+}
+// критически затухающая пружина (точно при любом шаге): голова трогается мягко и приходит без рывка — не «щелчок, потом медленно», как у lerp
+function spring3(x, v, to, w, dt) {
+  const e = Math.exp(-w * dt);
+  for (const a of ['x', 'y', 'z']) { const c1 = x[a] - to[a], c2 = v[a] + w * c1; x[a] = to[a] + (c1 + c2 * dt) * e; v[a] = (c2 - w * (c1 + c2 * dt)) * e; }
+}
+// взгляд: перевёл глаза на далёкую цель — обычно моргает; говорит — начав фразу, часто отводит глаза (вспоминает, подбирает слова) и возвращает;
+// слушает — смотрит на говорящего; молчит один — изредка уводит взгляд и возвращает. В страхе и «замер» — смотрит не отрываясь
+function gazeLife(C, tt, dT, talking, hearing, cut, tgt) {
+  const g = C.gz || (C.gz = { avT: 0, avD: 1, y: 0, p: 0, next: 1 + rnd() * 3, was: false, tgt: null });
+  if (cut || !g.tgt) { g.avT = 0; g.next = .8 + rnd() * 2.5; g.tgt = tgt.clone(); }
+  else { if (tgt.angleTo(g.tgt) > .35 && rnd() < .75) C.blinkReq = 1; g.tgt.copy(tgt); }
+  const fs = C.fsNow || {}, stare = !!(fs.wide || fs.press || fs.dead || (C.pose && C.pose.stare));
+  const avert = d => { g.avT = g.avD = d; g.y = (rnd() < .5 ? -1 : 1) * (talking ? .08 + rnd() * .1 : .1 + rnd() * .16); g.p = (rnd() < .65 ? -1 : 1) * (.025 + rnd() * .05); };
+  if (talking && !g.was) { if (!stare && rnd() < .45) avert(.5 + rnd() * .8); if (rnd() < .3) C.blinkReq = 1; }
+  if (!talking && g.was && rnd() < .5) C.blinkReq = 1;   // договорил — моргнул
+  g.was = talking; g.next -= dT;
+  if (g.next <= 0) { g.next = talking ? 2.5 + rnd() * 3.5 : 3.5 + rnd() * 5; if (!stare && !hearing && rnd() < .5) avert(talking ? .4 + rnd() * .6 : .6 + rnd() * 1.1); }
+  if (g.avT > 0) { g.avT -= dT; const k = clamp(g.avT / .12, 0, 1) * clamp((g.avD - g.avT) / .08, 0, 1); C.avY = g.y * k; C.avP = g.p * k; } else C.avY = C.avP = 0;
+  if (stare) C.avY = C.avP = 0;
+}
+// голова поверх клипа: медленный дрейф (не манекен); говорит — на ударе слова кивок, громче — голова чуть выше;
+// слушает — в паузах говорящего иногда кивает («угу»), моргает, голова чуть склонена
+function headLife(C, tt, dT, talking, hearing) {
+  const g = C.hl || (C.hl = { ph: [0, 1, 2, 3, 4].map(() => rnd() * 9), env: 0, a: 1, hr: 0, nT: 9, nA: 0, nD: .4, nNext: 0, hLen: 0, hGap: 0 });
+  const nod = (a, d) => { g.nT = 0; g.nA = a; g.nD = d; g.nNext = tt + d + .25 + rnd() * .5; };
+  if (C.onset && tt > g.nNext && rnd() < .6) { nod((.02 + .04 * Math.min(1, g.env * 1.4)) * (rnd() < .2 ? -.7 : 1), .3 + rnd() * .14); if (rnd() < .25) C.brF = 1; }   // ударный слог — кивок, иногда бровь
+  g.env += ((talking ? C.talk : 0) - g.env) * Math.min(1, dT * (C.talk > g.env ? 10 : 2.5));
+  if (C.hear > .06) { g.hLen += dT; g.hGap = 0; }   // слушает: фраза говорящего кончилась (пауза после ≥ 0,9 с речи) — «угу»
+  else if (g.hLen > 0) { g.hGap += dT; if (g.hGap > .25) { if (g.hLen > .9 && !talking) { const ok = C.hearOk !== false && !(C.fsNow || {}).wide && !(C.fsNow || {}).press;   // голосу из темноты и в страхе не поддакивают
+      if (ok && rnd() < .5) nod(.028 + rnd() * .025, .45 + rnd() * .15); if (rnd() < .55) C.blinkReq = 1; if (ok && rnd() < .2) C.brF = 1; } g.hLen = 0; } }
+  const frozen = 1 - .85 * clamp((C.fsNow || {}).press || 0, 0, 1);   // затаился, оцепенел — голова почти не шевелится
+  g.a = lerp(g.a, (talking ? 1.6 + g.env : hearing ? 1.15 : 1) * frozen, Math.min(1, dT * 2)); g.hr = lerp(g.hr, hearing ? .03 : 0, Math.min(1, dT * 1.5));
+  const p = g.ph; let yaw = g.a * (.016 * Math.sin(tt * .53 + p[0]) + .008 * Math.sin(tt * 1.31 + p[1]));
+  let pit = g.a * (.011 * Math.sin(tt * .71 + p[2]) + .006 * Math.sin(tt * 1.87 + p[3])) + .035 * g.env;
+  g.nT += dT; if (g.nT < g.nD) pit -= g.nA * Math.sin(Math.PI * g.nT / g.nD) ** 2;
+  // реакция «нет» / «да» по реплике (react) — головой, на своей позе: два-три покачивания или два кивка и успокоился
+  // (раньше всё тело на это время переходило в клип Quaternius — стойка бойца, сутулая спина — и обратно)
+  const rb = HEADREACT.has(C.reactBody) ? C.reactBody : null; if (rb !== g.rb) { g.rb = rb; g.rT = 0; } else g.rT = (g.rT || 0) + dT;
+  if (rb) { const u = g.rT, env = clamp(u / .15, 0, 1) * (1 - clamp((u - 1.15) / .5, 0, 1));
+    if (rb === 'no') yaw += .2 * Math.sin(2 * Math.PI * 2.1 * u) * env; else pit -= .085 * (1 - Math.cos(2 * Math.PI * 1.8 * u)) * .5 * env; }
+  return [yaw, pit, (.008 + .012 * g.a) * Math.sin(tt * .37 + p[4]) + g.hr];
+}
+const HEADREACT = new Set(['no', 'yes']);   // у живых людей «нет» и «да» — головой (headLife), а не клипом всего тела
+
 function updateSkinned(C, t, dt) {
   // склейка (C.cut из draw) или персонаж снова появился после перерыва (Жилец мелькнул в глубине кадра): поза, взгляд и шаг — сразу, не перетекают из прошлого появления
-  const tt = t + C.t0, P = C.pose, U = C.U, cut = C.cut || C.lastT == null || t - C.lastT > .5 || t < C.lastT; C.cut = false; C.lastT = t;
+  const tt = t + C.t0, P = C.pose, U = C.U, cut = C.cut || C.lastT == null || t - C.lastT > (window.__CUTGAP || .5) || t < C.lastT;   // __CUTGAP — для проб на медленной машине (tools/anim/*_probe.js)
+  const dT = cut ? 0 : Math.max(0, t - C.lastT);   // сколько прошло на самом деле (на паузе — 0; больше 0,5 с — это уже склейка)
+  C.cut = false; C.lastT = t; C.cutNow = cut;
   if (cut) { C.lookDir = null; C.prevP = null; C.walkV = null; }
+  // реакция по реплике (beat.react в story.js): тело (кивок, «нет», руки скрещены) и/или лицо — 'no+worry', 'sad'
+  { const rp = typeof C.react === 'string' ? C.react.split('+') : []; C.reactBody = rp.find(x => REACT[x]) || null; C.reactFace = rp.find(x => !REACT[x] && C.faceSets[x]) || null; }
+  C.fsNow = C.faceSets[C.reactFace || C.faceSet] || {};
   if (C.talk > .06) C.talkT = tt + .7;   // паузы между словами не сбивают анимацию «говорит»
   const talking = tt < (C.talkT || -1);
+  if ((C.hear || 0) > .06) C.hearT = tt + .6;   // слушает: говорит кто-то другой (в кадре, по телефону, по рации)
+  const hearing = !talking && tt < (C.hearT || -1);
+  C.talkingNow = talking; C.hearingNow = hearing;
+  // ударный слог: слово началось после паузы (буквы реплики — движок знает, какое слово звучит) или голос стал громким после тишины
+  C.onset = false;
+  if (talking) { const sil = C.vis ? C.vis === 'sil' : C.talk < .1; if (!sil && (C.silT ?? 1) > .09) C.onset = true; C.silT = sil ? (C.silT ?? 1) + dT : 0; } else C.silT = 1;
   const OBJ = !!(C.v3 && P && typeof P === 'object');   // поза-объект: постановка act3Body (клипы по времени кадра, пальцы, касания, предметы)
   if (OBJ && P.look) C.look = new T.Vector3(...P.look);
   let want = OBJ ? C.clip : POSE[P] || 'Idle_Loop';
   if (C.v3 && (P === 'sitfloor' || P === 'sitpaper' || P === 'kneel')) want = 'Idle_Loop';   // на коленях: ноги и таз ставит kneel()
   if (talking && P === 'stand') want = POSE.talk;
   if (talking && P === 'sit') want = POSE.sittalk;
-  if (!OBJ && C.react && REACT[C.react] && (P === 'stand' || P === 'talk')) want = REACT[C.react];   // реакция по реплике: кивок, «нет», руки скрещены
+  if (!OBJ && C.reactBody && !(alive(C) && HEADREACT.has(C.reactBody)) && (P === 'stand' || P === 'talk')) want = REACT[C.reactBody];   // реакция по реплике: кивок, «нет», руки скрещены
   if (C.o.monster && P === 'walk') want = 'Zombie_Walk_Fwd_Loop';
   if (want !== C.clip) {
     const CL = C.clips || CLIP, a = C.mixer.clipAction(CL[natClip(C, want)[0]] || CL[want] || CL.Idle_Loop);
@@ -1113,6 +1235,8 @@ function updateSkinned(C, t, dt) {
   // Жилец двигается рывками, как покадровая анимация: поза меняется ~7 раз в секунду
   let sdt = dt, still = false;
   if (C.o.stopmo) { C.smAcc = (C.smAcc || 0) + dt; if (C.smAcc < C.o.stopmo && C.smDone) still = true; else { sdt = C.smAcc; C.smAcc = 0; C.smDone = true; } }
+  // покадровый Жилец между сменами позы стоит, но предметы каждый кадр прячутся (propsFrame) — то, что у него в руке (рация Гаса), ставим на место заново
+  if (still && OBJ && P.hold) for (const sd of ['l', 'r']) if (P.hold[sd]) holdProp(C, sd, P.hold[sd], 0);
   if (!still) {
   // шаг под скорость: ноги идут ровно с той скоростью, с какой человек движется по полу (иначе «плывёт» или шагает на месте)
   let stride = 1;
@@ -1122,15 +1246,16 @@ function updateSkinned(C, t, dt) {
     (C.prevP || (C.prevP = new T.Vector3())).copy(p);
     stride = C.walkV == null ? 1 : clamp(C.walkV / base, 0, 1.9);
   }
-  if (OBJ) act3Body(C, P, tt, sdt);
+  if (OBJ) act3Body(C, P, tt, sdt, C.o.stopmo ? sdt : dT, cut);
   else {
   if (P !== 'lay') C.act.timeScale = (P === 'back' ? -stride : P === 'monster' ? .3 : P === 'reach' ? .55 : C.o.monster ? .8 : stride) * (natClip(C, want)[2] || 1);
   // пальцы — в исходную позу до анимации: клип их почти не трогает, и кулак от швабры/стука иначе оставался навсегда
   for (const sd of ['l', 'r']) { for (const f of FING) for (let j = 1; j <= 3; j++) { const n = f + '_0' + j + '_' + sd; if (C.bone[n]) C.bone[n].quaternion.copy(C.rest[n]); }
     for (let j = 1; j <= 3; j++) { const n = 'thumb_0' + j + '_' + sd; if (C.bone[n]) C.bone[n].quaternion.copy(C.rest[n]); } }
   bonesRestore(C); C.mixer.update(Math.min(sdt, .2)); bonesSnap(C);
-  if (!C.o.monster && SOFTC.has(natClip(C, want)[0])) { buildHands(); for (const sd of ['l', 'r']) setFingers(C, sd, 'soft', 1); }   // кисти мягкие: клип Quaternius сжимал их в кулак
   if (/^Rk_Sit/.test(natClip(C, want)[0])) seatFeet(C);
+  if (P !== 'lay') breathe(C, tt, dT);
+  if (!C.o.monster && SOFTC.has(natClip(C, want)[0])) { buildHands(); for (const sd of ['l', 'r']) { setFingers(C, sd, 'soft', 1); fingerLife(C, sd, tt); } }   // кисти мягкие: клип Quaternius сжимал их в кулак
   }
   // ноги: у базовой анимации стойка «борца» (ступни широко) — сводим ступни под бёдра, подошва остаётся на полу
   const STAT = { stand: 1, talk: 1, knock: 1, press: 1, give: 1, paper: 1, reach: 1, hug: 1, mop: 1, slam: 1 };
@@ -1230,19 +1355,28 @@ function updateSkinned(C, t, dt) {
   // ноги не держат: идёт, оседая на каждом шаге, корпус ведёт в сторону
   if (P === 'weak') { aimBone(C, 'spine_01', 'spine_02', [Math.sin(tt * 2.2) * .25, 1, .35], .8); wiggle(C, 'calf_l', [1, 0, 0], .35 + .25 * Math.sin(tt * 4.4)); wiggle(C, 'calf_r', [1, 0, 0], .35 - .25 * Math.sin(tt * 4.4)); }
   // голова смотрит на цель (обычно в камеру): доворачиваем «нос» головы к цели поверх анимации, поровну шее и голове
-  const k = Math.min(1, sdt * (C.o.stopmo ? 3 : 7)), hb = C.bone.Head;
+  const k = Math.min(1, sdt * (C.o.stopmo ? 3 : 7)), hb = C.bone.Head, life = alive(C) && !(OBJ && P.still), eyesLive = life && !C.o.noBlink;
   hb.updateWorldMatrix(true, false); hb.getWorldPosition(_a);
   C.root.getWorldQuaternion(_q2);
   if (C.look) _b.copy(C.look).sub(_a).normalize();
   else _b.set(Math.sin(tt * .4) * .06, -.05, 1).normalize().applyQuaternion(_q2);
   if (C.o.jerk && !C.noTilt && Math.sin(tt * 1.3) > .985) _b.x += (rnd() - .5) * .8;
+  // глаза отводит (вспоминает, подбирает слова) — глаза целиком, голова — на треть
+  if (eyesLive) gazeLife(C, tt, dT, talking, hearing, cut, _b); else C.avY = C.avP = 0;
+  _be.copy(_b); if (C.avY || C.avP) { offDir(_be, C.avY, C.avP); offDir(_b, C.avY * .35, C.avP * .35); }
   // не дальше, чем позволяет шея: ограничиваем угол от направления тела
   _c.set(0, 0, 1).applyQuaternion(_q2);
   const ang = _b.angleTo(_c), hm = C.o.headMax || 1.15; if (ang > hm) { _q.setFromUnitVectors(_c, _b); _q.slerp(_pq.identity(), 1 - hm / ang); _b.copy(_c).applyQuaternion(_q); }
-  C.lookDir = C.lookDir ? C.lookDir.lerp(_b, k).normalize() : _b.clone();
-  // при разговоре голова чуть кивает и покачивается, а не стоит как у манекена
-  const LD = _ld.copy(C.lookDir);
-  if (talking && !C.o.monster) { LD.y += Math.sin(tt * 3.1) * .035 + Math.sin(tt * 1.3) * .02; LD.x += Math.sin(tt * .9) * .025; LD.normalize(); }
+  // голова доворачивается пружиной (мягко трогается и приходит без рывка); глаза — впереди головы: на новую цель переходят сразу (саккада),
+  // голова догоняет, и глаза возвращаются к центру — как у людей. У Жильца — прежний рывковый доворот
+  if (!C.lookDir) { C.lookDir = _b.clone(); (C.lookV || (C.lookV = new T.Vector3())).set(0, 0, 0); }
+  else if (!window.__NOLIFE && !C.o.stopmo && !C.o.jerk) { spring3(C.lookDir, C.lookV || (C.lookV = new T.Vector3()), _b, C.o.headW || 8, sdt); C.lookDir.normalize(); }
+  else C.lookDir.lerp(_b, k).normalize();
+  if (!C.eyeDir || cut) C.eyeDir = _be.clone(); else C.eyeDir.lerp(_be, 1 - Math.exp(-sdt * 40)).normalize();
+  // голова не стоит как у манекена: дрейф, кивки на ударных словах, «угу» в паузах говорящего, лёгкий наклон
+  const LD = _ld.copy(C.lookDir); C.rollNow = 0;
+  if (life) { const [hy, hp, hr] = headLife(C, tt, dT, talking, hearing); offDir(LD, hy, hp); C.rollNow = hr; }
+  else if (talking && !C.o.monster) { LD.y += Math.sin(tt * 3.1) * .035 + Math.sin(tt * 1.3) * .02; LD.x += Math.sin(tt * .9) * .025; LD.normalize(); }
   if (C.no > 0) { _q.setFromAxisAngle(_UP, Math.sin(tt * 6.5) * .42 * C.no); LD.applyQuaternion(_q); }   // мотает головой: «нет, нет, нет»
   for (const [bn, f] of [['neck_01', .45], ['Head', .9]]) {
     const b = C.bone[bn]; b.updateWorldMatrix(true, false);
@@ -1252,6 +1386,7 @@ function updateSkinned(C, t, dt) {
     // Жилец: голова набок, и время от времени шея резко «ломается» почти горизонтально (на скримере — прямо, лицом в лицо)
     const tl = C.tiltNow ?? C.o.tilt;   // tiltNow — наклон головы, заданный кадром (голова медленно ложится набок, не сводя глаз)
     if (tl && bn === 'Head' && !C.noTilt) { const snap = C.o.jerk && P !== 'eat' ? Math.pow(Math.max(0, Math.sin(tt * .9 + 1)), 24) * 1.1 : 0; const r = new T.Quaternion().setFromAxisAngle(LD, (Math.sin(tt * .3) * .05 + tl + snap) * (C.o.flip ? -1 : 1)); _q.premultiply(r); }
+    else if (C.rollNow && bn === 'Head') _q.premultiply(_q3.setFromAxisAngle(LD, C.rollNow));   // живой: голова чуть склонена и покачивается
     bw.premultiply(_q); b.parent.getWorldQuaternion(_pq); b.quaternion.copy(_pq.invert().multiply(bw)); _pq.identity();
     b.updateWorldMatrix(false, true);
   }
@@ -1268,7 +1403,7 @@ function updateSkinned(C, t, dt) {
   if (C.strands) C.strands.forEach((st, i) => { st.rotation.x = .08 + Math.sin(tt * 1.1 + i) * .05; st.rotation.z = Math.sin(tt * .8 + i * 2) * .04; });
   // лицо
   C.blinkT -= dt; let blink = 0; if (C.blinkT < 0) { blink = 1; if (C.blinkT < -.12) C.blinkT = 2 + rnd() * 4; }
-  const fs = C.faceSets[C.faceSet] || {};
+  const fs = C.fsNow;
   if (C.o.monster || C.o.noBlink || fs.wide) blink = 0;
   if (C.o.dead) blink = 1;   // Жилец и «Катя» не моргают — это улика
   U.uBlink.value = blink;
@@ -1291,10 +1426,10 @@ function updateSkinned(C, t, dt) {
     let up = fs.browUp || 0, inn = fs.browIn || 0;
     if (!C.o.noBlink && !C.o.dead) {
       up += clamp((tk - .45) * 1.5, 0, .6);
-      C.brT = (C.brT ?? 2 + rnd() * 4) - dt; if (C.brT < 0) { C.brT = 3 + rnd() * 5; C.brF = 1; }
+      C.brT = (C.brT ?? 2 + rnd() * 4) - dt; if (C.brT < 0) { C.brT = talking ? 3 + rnd() * 4 : 6 + rnd() * 8; C.brF = 1; }   // молча брови «думают» реже, чем на словах
       if (C.brF > 0) { up += Math.sin((1 - C.brF) * Math.PI) * .45; C.brF -= dt * 2.2; }
     }
-    const B = C.browU.value, kb = cut ? 1 : Math.min(1, dt * 12); B.x += (up - B.x) * kb; B.y += (inn - B.y) * kb;
+    const B = C.browU.value, kb = cut ? 1 : Math.min(1, dt * 9); B.x += (up - B.x) * kb; B.y += (inn - B.y) * kb;
   }
   U.uScream.value = C.scream || fs.scream || 0;
   U.uGore.value = C.gore || 0;
@@ -1314,9 +1449,89 @@ function updateSkinned(C, t, dt) {
 // Кожа и ткань знают мокрость (темнее и блестит), серость (неживое), кровь и тёмные глазницы.
 // vB — точка тела в позе покоя в метрах (uQ переводит сжатые координаты meshopt в метры), поэтому пятна не «плывут» при движении
 const LUMA = 'dot(diffuseColor.rgb, vec3(.3, .59, .11))';
+// «Кино»: кожа, глаза, волосы и ткань без пластика (правила — tools/art/LOOK.md). Свет каждой лампы для этих частей считается по-своему:
+// кожа — свет заходит за терминатор (рассеяние под кожей, красный — дальше всех), блик слабее пластика (F0 кожи ≈ .028) плюс узкий «жирный»;
+// волосы — блик вдоль прядей полосой (Kajiya–Kay: первый белый, второй в цвет волос), мягкий спад света; ткань — ворс светится по краю.
+const HUM_NOISE = `float vn3(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+  return mix(mix(mix(hh3(i), hh3(i + vec3(1., 0., 0.)), f.x), mix(hh3(i + vec3(0., 1., 0.)), hh3(i + vec3(1., 1., 0.)), f.x), f.y),
+    mix(mix(hh3(i + vec3(0., 0., 1.)), hh3(i + vec3(1., 0., 1.)), f.x), mix(hh3(i + vec3(0., 1., 1.)), hh3(i + vec3(1., 1., 1.)), f.x), f.y), f.z); }
+`;
+// кожа: лоб и нос жирнее (ниже шероховатость), по лицу пятнами ±; поры — рельеф в 1 мм, гаснет, когда пиксель крупнее поры (без ряби)
+const SKIN_ROUGH = `  { vec3 q = vB - (uEyeL3 + uEyeR3) * .5;
+    float tz = smoothstep(.045, .02, abs(q.x)) * smoothstep(.012, .025, q.y) * smoothstep(.085, .06, q.y) + smoothstep(.018, .008, abs(q.x)) * smoothstep(-.06, -.045, q.y) * smoothstep(.01, -.005, q.y);
+    roughnessFactor = clamp(roughnessFactor - .15 * tz * smoothstep(-.045, -.015, q.z) + .14 * (vn3(vB * 55.) - .5), .3, .85); }
+`;
+const SKIN_PORES = `
+  { float mpp = length(fwidth(vB)) * 1000., hp = vn3(vB * 950.) * .65 + vn3(vB * 2600.) * .35;   // mpp — мм на пиксель; высота пор ~0,15 мм
+    vec2 dh = vec2(dFdx(hp), dFdy(hp)) * 1.5e-4 * smoothstep(1.5, .45, mpp);
+    vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx); float det = dot(sx, r1);
+    vec3 nn = abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2); normal = dot(nn, nn) > 1e-24 ? normalize(nn) : normal; }
+`;
+// саван Жильца (поза покоя модели tenant, рост 2,43 м: шея ~2.04, плечи 1.92, грудь ~1.75–1.88, бёдра 1.24, колени .66): силуэт — грудь плоская, ткань свободнее книзу,
+// внутренние стороны бёдер сведены — подол, а не штанины; руки и голени голые
+const SHROUD_VS = `
+  { float qs = length(uQ[0].xyz), body = mix(smoothstep(.27, .23, abs(vB.x)), smoothstep(.4, .34, abs(vB.x)), smoothstep(1.32, 1.22, vB.y));
+    float inG = body * smoothstep(2.04, 1.95, vB.y) * smoothstep(.46, .6, vB.y);
+    float bust = smoothstep(1.62, 1.7, vB.y) * smoothstep(1.92, 1.82, vB.y) * smoothstep(.2, .1, abs(vB.x));
+    transformed.z -= bust * max(0., vB.z - .14) * .9 / qs;
+    transformed += normalize(normal) * inG * mix(.014, .05, smoothstep(1.28, .62, vB.y)) / qs;
+    transformed.x -= sign(vB.x) * smoothstep(1.2, 1.02, vB.y) * smoothstep(.46, .7, vB.y) * smoothstep(0., .5, -sign(vB.x) * normal.x) * .05 / qs; }
+`;
+const SHROUD_VN = `
+  { vec3 b0 = (uQ * vec4(position, 1.)).xyz; float bust = smoothstep(1.6, 1.7, b0.y) * smoothstep(1.94, 1.82, b0.y) * smoothstep(.21, .1, abs(b0.x)) * step(0., objectNormal.z);
+    objectNormal = normalize(mix(objectNormal, vec3(objectNormal.x * .3, objectNormal.y * .3, 1.), bust * .85)); }   // и в свете грудь плоская
+`;
+// складки рубахи — рельефом в нормали: свет ложится полосами, ткань читается тканью, а не кожей
+const SHROUD_N = `
+  { float hf = sin(atan(vB.x, vB.z + .3) * 30. + vn3(vB * 7.) * 4.) * (.0035 + .007 * smoothstep(1.5, .6, vB.y)) + vn3(vec3(vB.x * 60., vB.y * 6., vB.z * 60.)) * .003;
+    vec2 dh = vec2(dFdx(hf), dFdy(hf)) * gCloth; vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx); float det = dot(sx, r1);
+    vec3 nn = abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2); normal = dot(nn, nn) > 1e-24 ? normalize(nn) : normal; }
+`;
+// ткань: грязно-белая, складки вниз, пятна, рваный подол с тёмной мокрой каймой; на голых руках и ногах — жилы и вены
+const SHROUD_FS = `float gCloth, gWet; vec3 gClothC;
+  { float body = mix(smoothstep(.27, .23, abs(vB.x)), smoothstep(.4, .34, abs(vB.x)), smoothstep(1.32, 1.22, vB.y));
+    float hemY = .56 + .07 * (vn3(vec3(vB.x * 26., 0., vB.z * 26.)) - .5) + .03 * (hh3(vec3(floor(vB.x * 60.), 3., floor(vB.z * 60.))) - .5);
+    gCloth = body * smoothstep(1.98, 1.95, vB.y + .03 * cos(vB.x * 16.)) * smoothstep(hemY - .012, hemY + .012, vB.y);
+    float fold = sin(atan(vB.x, vB.z + .3) * 30. + vn3(vB * 7.) * 4.) * (.08 + .14 * smoothstep(1.5, .6, vB.y));
+    float dirt = smoothstep(.55, .78, vn3(vB * 8.5)) * .55 + smoothstep(1.1, .55, vB.y) * .35;
+    gWet = smoothstep(hemY + .2, hemY + .02, vB.y) * gCloth;
+    vec3 cloth = vec3(.36, .34, .3) * (1. + fold) * (1. - .4 * dirt) * mix(vec3(1.), vec3(.74, .6, .42), dirt * .85);
+    cloth *= 1. - .55 * gWet; gClothC = mix(cloth, vec3(.06, .055, .05), .4 * gWet * smoothstep(.4, .7, vn3(vB * 30.)));
+    float vein = smoothstep(.035, .0, abs(vn3(vec3(vB.x * 38., vB.y * 9., vB.z * 38.)) - .5)) * (1. - gCloth);
+    diffuseColor.rgb *= 1. - .3 * vein * vec3(1., .8, .7); }
+`;
+const RE_ARGS = 'const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight';
+const HUM_RE = {
+  skin: `void RE_Direct_Hum( ${RE_ARGS} ) {
+	float nl = dot( geometryNormal, directLight.direction );
+	vec3 w = vec3( .5, .24, .16 ), wrapD = pow( clamp( ( nl + w ) / ( 1. + w ), 0., 1. ), vec3( 1. ) + w );
+	vec3 irr = saturate( nl ) * directLight.color;
+	PhysicalMaterial m2 = material; m2.roughness = max( material.roughness * .5, .14 );
+	reflectedLight.directSpecular += irr * ( BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material ) + .22 * BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, m2 ) );
+	reflectedLight.directDiffuse += wrapD * directLight.color * BRDF_Lambert( material.diffuseColor );
+}`,
+  hair: `float gHairS = 0.;
+void RE_Direct_Hum( ${RE_ARGS} ) {
+	float nl = dot( geometryNormal, directLight.direction );
+	reflectedLight.directDiffuse += saturate( nl * .7 + .3 ) * saturate( nl + .4 ) * directLight.color * BRDF_Lambert( material.diffuseColor );
+	vec3 tv = ( viewMatrix * vec4( 0., -1., 0., 0. ) ).xyz; tv -= geometryNormal * dot( geometryNormal, tv );   // пряди — вниз; на макушке (нормаль вверх) направление не определено —
+	float tl = length( tv ); tv /= max( tl, 1e-3 );                                                                   // там блик полосой гаснет (иначе пятна квадратами)
+	vec3 h = normalize( directLight.direction + geometryViewDir );
+	float t1 = dot( tv, h ) + gHairS, t2 = t1 - .12;
+	float s1 = pow( sqrt( max( 0., 1. - t1 * t1 ) ), 110. ), s2 = pow( sqrt( max( 0., 1. - t2 * t2 ) ), 26. );
+	float up = dot( geometryNormal, normalize( ( viewMatrix * vec4( 0., 1., 0., 0. ) ).xyz ) );   // макушка и верх головы — без полосы (карточки там лежат как попало, был пёстрый блик)
+	reflectedLight.directSpecular += directLight.color * smoothstep( -.15, .35, nl ) * smoothstep( .35, .8, tl ) * ( 1. - smoothstep( .3, .65, up ) ) * ( s1 * .045 + s2 * .06 * material.diffuseColor );
+}`,
+  cloth: `void RE_Direct_Hum( ${RE_ARGS} ) {
+	float nl = dot( geometryNormal, directLight.direction ), nv = saturate( dot( geometryNormal, geometryViewDir ) );
+	vec3 irr = saturate( nl ) * directLight.color;
+	reflectedLight.directSpecular += irr * BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material );
+	reflectedLight.directDiffuse += ( irr + directLight.color * saturate( nl + .35 ) * pow( 1. - nv, 4. ) * .45 ) * BRDF_Lambert( material.diffuseColor );   // ворс по краю
+}`,
+};
 function humanMat(C, n, kind, Q) {
   const o = C.o, src = n.material, cut = kind === 'brows' || kind === 'lashes' || kind === 'hair' || (kind === 'eyes' && o.deadEyes == null), cloth = kind.startsWith('cloth');
-  const R = { skin: CINE ? .72 : .64, eyes: .06, brows: .85, lashes: .85, teeth: .3, tongue: .4, hair: CINE ? .68 : .55 }[kind] ?? .86;   // в «Кино» волосы матовее: широкий блик делал из них лакированную шапку; блеск — прядями (hh3 ниже) и контровым светом
+  const R = { skin: CINE ? .6 : .64, eyes: .06, brows: .85, lashes: .85, teeth: .3, tongue: .4, hair: CINE ? .68 : .55 }[kind] ?? .86;   // в «Кино» волосы матовее: широкий блик делал из них лакированную шапку; блеск — прядями (hh3 ниже) и контровым светом
   let tint = null; for (const k in (o.tint || {})) if (kind === k || kind.includes(k)) tint = o.tint[k];
   const p = { map: src.map || null };
   if (typeof tint === 'number') p.color = tint;
@@ -1334,19 +1549,29 @@ function humanMat(C, n, kind, Q) {
   const re = Array.isArray(tint) ? tint : null, U = Object.assign({}, C.HU, { uQ: { value: Q }, uTint: { value: new T.Color(re ? re[0] : 0xffffff) }, uGain: { value: re ? re[1] : 1 } });
   const hem = /pants|jeans|trousers/.test(kind) && C.hemY != null ? C.hemY : null;
   const infl = /sweater|shirt|hoodie/.test(kind) && C.hemY != null ? .007 / Q.getMaxScaleOnAxis() : 0;   // низ кофты чуть наружу — лежит поверх брюк и на шаге
+  const shroud = kind === 'skin' && o.shroud;   // Жилец: длинная грязная рваная рубаха-саван от шеи ниже колен (была голая серая фигура)
+  const hre = CINE && !o.monster ? HUM_RE[kind === 'skin' ? 'skin' : kind === 'hair' ? 'hair' : cloth ? 'cloth' : ''] : null;   // у Жильца своя кожа (мёртвая, мокрая) — как было
+  if (shroud) m.extensions = Object.assign({}, m.extensions, { derivatives: true });   // складки рубахи — dFdx (WebGL1 в «Ретро»)
   const snap = m.onBeforeCompile;
   m.onBeforeCompile = sh => {
     snap(sh); Object.assign(sh.uniforms, U);
-    sh.vertexShader = 'uniform mat4 uQ;\nvarying vec3 vB;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vB = (uQ * vec4(position, 1.)).xyz;'
-      + (infl ? `\n  transformed += normalize(normal) * ${infl.toExponential(3)} * smoothstep(${(C.hemY + .16).toFixed(3)}, ${(C.hemY - .02).toFixed(3)}, vB.y);` : ''));
+    sh.vertexShader = 'uniform mat4 uQ;\nvarying vec3 vB;\n' + sh.vertexShader.replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>' + (shroud ? SHROUD_VN : '')).replace('#include <begin_vertex>', '#include <begin_vertex>\n  vB = (uQ * vec4(position, 1.)).xyz;'
+      + (infl ? `\n  transformed += normalize(normal) * ${infl.toExponential(3)} * smoothstep(${(C.hemY + .16).toFixed(3)}, ${(C.hemY - .02).toFixed(3)}, vB.y);` : '')
+      + (shroud ? SHROUD_VS : ''));
     sh.fragmentShader = `uniform vec3 uTint, uGoreP, uEyeL3, uEyeR3; uniform float uGain, uGrey, uWet, uGore, uSocket, uH, uMouthZ;
 varying vec3 vB;
 float hh3(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
-` + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+${CINE || shroud ? HUM_NOISE : ''}` + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
   ${hem != null ? `if (vB.y > ${hem.toFixed(3)}) discard;   // под подолом кофты` : ''}
   ${re ? `diffuseColor.rgb = mix(vec3(${LUMA}) * uTint * uGain, uTint, ${(re[2] || 0).toFixed(2)});` : ''}
   ${kind === 'skin' ? `{ float s = smoothstep(.04, .012, length(vB - uEyeL3)) + smoothstep(.04, .012, length(vB - uEyeR3)); diffuseColor.rgb *= 1. - .9 * uSocket * clamp(s, 0., 1.); }` : ''}
-  ${kind === 'hair' && CINE ? `diffuseColor.rgb *= .86 + .28 * hh3(vec3(floor(vB.x * 160.), floor(vB.z * 160.), 1.));   // пряди: соседние полоски (по телу, сверху вниз) чуть разной яркости — волосы не сплошная шапка` : ''}
+  ${shroud ? SHROUD_FS : ''}
+  ${kind === 'hair' && CINE ? `diffuseColor.rgb *= .86 + .28 * vn3(vec3(vB.x * 260., vB.y * 9., vB.z * 260.));   // пряди: соседние полоски (вдоль — сверху вниз) чуть разной яркости — волосы не сплошная шапка; без клеток (на макушке были квадраты)
+  ${hre ? 'gHairS = (vn3(vec3(vB.x * 300., vB.y * 7., vB.z * 300.) + 17.) - .5) * .14 + (vn3(vB * 40.) - .5) * .06;   // блик вдоль прядей у каждой пряди чуть выше или ниже' : ''}` : ''}
+  ${kind === 'eyes' && CINE && o.deadEyes == null ? `{ vec3 q = vB - (vB.x > 0. ? uEyeL3 : uEyeR3);   // белок не белее бумаги (чуть тёплый); верхнее веко и уголки затеняют глаз — глаз сидит в глазнице, а не наклейка
+    float scl = smoothstep(.45, .7, min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b)));
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(.82, .77, .74), scl);
+    diffuseColor.rgb *= 1. - clamp(smoothstep(-.002, .009, q.y) * .55 + smoothstep(.005, .011, abs(q.x)) * .3, 0., .7); }` : ''}
   ${kind === 'teeth' || kind === 'tongue' ? `float mouthD; { float dz = clamp((uMouthZ - vB.z) / .026, 0., 1.), pink = clamp((diffuseColor.r - diffuseColor.g) * 2.5, 0., 1.);   // рот внутри в тени: чем глубже, тем темнее; дёсны и язык — приглушённые
     ${kind === 'teeth' ? `diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.84, .81, .76), .5 * (1. - pink));   // зубы ровнее по цвету: тёмные бороздки текстуры издали делали ряд похожим на решётку` : ''}
     mouthD = ${kind === 'tongue' ? 'max(dz, .5)' : 'dz'};
@@ -1356,6 +1581,7 @@ float hh3(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43
   ${kind === 'skin' ? `shK = 1. - .8 * smoothstep(.17, .1, length(vB - ((uEyeL3 + uEyeR3) * .5 + vec3(0., .02, -.08))));` : ''}
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(${LUMA}) * vec3(.8, .85, .9), uGrey);
   diffuseColor.rgb *= 1. - .22 * uWet;
+  ${shroud ? 'diffuseColor.rgb = mix(diffuseColor.rgb, gClothC, gCloth);   // ткань — после серости кожи: грязно-белая, не в тон мёртвой коже' : ''}
   float gore = 0.;
   if (uGore > 0.) {
     vec3 d = (vB - uGoreP) / uH; float nz = hh3(floor(vB * 90.));
@@ -1363,15 +1589,18 @@ float hh3(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43
     float drip = step(.7, hh3(vec3(floor(vB.x * 50.), 1., floor(vB.z * 50.)))) * step(d.y, 0.) * smoothstep(-.45, -.1, d.y) * smoothstep(.2, .1, length(d.xz));
     gore = uGore * max(blob, drip);
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.2, .012, .012), clamp(gore * 1.4, 0., .95)); }`)
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, ' + (kind === 'hair' ? '.25' : '.42') + ', max(uWet * .75, gore));')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n' + (hre && kind === 'skin' ? SKIN_ROUGH : '') + (shroud ? '  roughnessFactor = mix(roughnessFactor, mix(.92, .45, gWet), gCloth);   // саван: ткань матовая, мокрый подол блестит\n' : '') + '  roughnessFactor = mix(roughnessFactor, ' + (kind === 'hair' ? '.25' : '.42') + ', max(uWet * .75, gore));')
+      .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>' + (hre && kind === 'skin' ? SKIN_PORES : '') + (shroud ? SHROUD_N : ''))
+      .replace('#include <lights_physical_pars_fragment>', '#include <lights_physical_pars_fragment>' + (hre ? '\n' + hre + '\n#undef RE_Direct\n#define RE_Direct RE_Direct_Hum\n' : ''))
+      .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>' + (hre && kind === 'skin' ? '\n  material.specularColor *= .7;   // F0 кожи ≈ .028, не .04 пластика' : ''))
       .replace('#include <lights_fragment_begin>', T.ShaderChunk.lights_fragment_begin.split('? getPointShadow(').join('? (1. - shK) + shK * getPointShadow(').split('? getShadow(').join('? (1. - shK) + shK * getShadow('))
       // глубже во рту свет не бликует: нёбо в «Кино» блестело серебром (или рыжим от тёплого света) — там выход не ярче самого цвета
       .replace('#include <opaque_fragment>', '#include <opaque_fragment>' + (kind === 'teeth' || kind === 'tongue' ? '\n  gl_FragColor.rgb = mix(gl_FragColor.rgb, min(gl_FragColor.rgb, diffuseColor.rgb * .8), smoothstep(.08, .6, mouthD));' : '')
-        + (kind === 'skin' && CINE ? '\n  { float lm = dot(gl_FragColor.rgb, vec3(.3, .59, .11)); gl_FragColor.rgb += vec3(.07, .018, .004) * (1. - smoothstep(.03, .32, lm)) * diffuseColor.r * (1. - uGrey); }' : ''));   // кожа: в тенях тёплый подсвет (кровь под кожей), не серый пластик
+        + (kind === 'skin' && CINE ? '\n  { float lm = dot(gl_FragColor.rgb, vec3(.3, .59, .11)); gl_FragColor.rgb += vec3(.04, .01, .0025) * (1. - smoothstep(.03, .32, lm)) * diffuseColor.r * (1. - uGrey); }' : ''));   // кожа: в тенях чуть тёплого (кровь под кожей), не серый пластик; на свету тёплый край даёт RE_Direct_Hum
   };
   // ключ программы: код шейдера у зубов, языка и «приглушённой» одежды свой — иначе three.js отдаёт им чужую готовую программу с тем же набором текстур
   const dimK = (() => { for (const k in (o.dim || {})) if (kind.includes(k)) return 'd' + o.dim[k]; return ''; })();
-  m.customProgramCacheKey = () => 'hum3' + (hem != null ? 'p' + hem.toFixed(3) : '') + (infl ? 'i' + C.hemY.toFixed(3) : '') + (kind === 'skin' ? 's' : '') + (kind === 'hair' ? 'h' : '') + (kind === 'teeth' ? 't' : kind === 'tongue' ? 'g' : '') + dimK + (re ? 'r' + (re[2] || 0) : '') + (CINE ? 'c' : '');
+  m.customProgramCacheKey = () => 'hum3' + (shroud ? 'S' : '') + (hre ? 'R' : '') + (kind === 'eyes' ? 'e' + (o.deadEyes == null ? 1 : 0) : '') + (cloth ? 'C' : '') + (hem != null ? 'p' + hem.toFixed(3) : '') + (infl ? 'i' + C.hemY.toFixed(3) : '') + (kind === 'skin' ? 's' : '') + (kind === 'hair' ? 'h' : '') + (kind === 'teeth' ? 't' : kind === 'tongue' ? 'g' : '') + dimK + (re ? 'r' + (re[2] || 0) : '') + (CINE ? 'c' : '');
   return m;
 }
 
@@ -1380,6 +1609,8 @@ const VOPEN = ['viseme_aa', 'viseme_O', 'viseme_E', 'viseme_aa', 'viseme_I', 'vi
 const VSHUT = ['viseme_PP', 'viseme_FF', 'viseme_SS', 'viseme_DD', 'viseme_nn', 'viseme_kk', 'viseme_TH', 'viseme_CH', 'viseme_RR'];
 // насколько открыт рот на каждой виземе (челюсть): гласные — шире, «п/б/м» — губы сомкнуты
 const JAW = { viseme_aa: .26, viseme_O: .2, viseme_E: .16, viseme_I: .1, viseme_U: .1, viseme_PP: 0, viseme_FF: .03, viseme_TH: .06, viseme_DD: .08, viseme_kk: .11, viseme_CH: .07, viseme_SS: .04, viseme_nn: .06, viseme_RR: .09 };
+// насколько звук виден на губах: п/б/м, ф/в, гласные — целиком; т/д/н/к/г делает язык — губы почти не меняются (иначе рот «стрекочет» на каждой букве)
+const VW = { viseme_SS: .65, viseme_TH: .55, viseme_DD: .5, viseme_kk: .45, viseme_nn: .45, viseme_RR: .6, viseme_I: .85, viseme_E: .9 };
 const CLIPS3 = {};   // клипы с высотой таза под рост модели
 function clipsFor(k) {
   const key = k.toFixed(3); if (CLIPS3[key]) return CLIPS3[key];
@@ -1460,35 +1691,118 @@ function makeHuman(o) {
   C.addFace = (nm, ov) => { C.faceSets[nm] = ov; };
   C.update = (t, dt) => updateSkinned(C, t, dt);
   fitProps(C);
+  if (o.gown) skinGown(C);
   return C;
+}
+
+// рубаха-саван Жильца — своя свободная сетка со скелетом (как полы плаща у v2), от плеч ниже колен.
+// Строится один раз в позе покоя по самому телу: на каждой высоте — эллипс вокруг туловища (руки в позе «Т» отрезаны), ниже бёдер —
+// вокруг обеих ног сразу и не уже бёдер (подол, а не штанины), книзу свободнее, по низу складки. Кости: грудь → поясница → таз → бёдра
+// (подол идёт за бедром своей стороны: шаг, присед, бросок). Ткань — gownMat: грязно-серо-белая, складки рельефом, пятна, рваный мокрый подол
+function skinGown(C) {
+  const sk = C.mesh, par = sk.parent; C.root.updateWorldMatrix(true, true);
+  const P = n => C.bone[n].getWorldPosition(new T.Vector3()), base = C.root.getWorldPosition(new T.Vector3());
+  const neck = P('neck_01'), pel = P('pelvis'), thL = P('thigh_l'), cfL = P('calf_l'), arm = P('upperarm_l'), sp3 = P('spine_03'), sp1 = P('spine_01');
+  const side = Math.sign(thL.x - pel.x) || 1, yTop = neck.y - .05 * C.ss, yHip = pel.y, yBot = cfL.y - .2 * C.ss, armCut = Math.abs(arm.x - base.x) * .92;
+  const pts = [], pa = sk.geometry.attributes.position, v = new T.Vector3(), step = Math.max(1, Math.floor(pa.count / 6000));   // точки тела в позе покоя (мир)
+  for (let i = 0; i < pa.count; i += step) { sk.getVertexPosition(i, v); v.applyMatrix4(sk.matrixWorld); pts.push([v.x, v.y, v.z]); }
+  const NR = 16, NA = 32, rows = [], ySh = arm.y;   // верхнее кольцо — вокруг шеи, второе — на высоте плечевых суставов: между ними плечи (руки выходят по бокам)
+  const band = (y, dy, cut) => { let x0 = 9, x1 = -9, z0 = 9, z1 = -9;
+    for (const [px, py, pz] of pts) { if (Math.abs(py - y) > dy || Math.abs(px - base.x) > cut) continue; x0 = Math.min(x0, px); x1 = Math.max(x1, px); z0 = Math.min(z0, pz); z1 = Math.max(z1, pz); }
+    if (x1 < x0) { x0 = base.x - .15; x1 = base.x + .15; z0 = base.z - .1; z1 = base.z + .1; }
+    return { cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, rx: (x1 - x0) / 2, rz: (z1 - z0) / 2 }; };
+  rows.push(Object.assign({ y: neck.y + .015 * C.ss, f: 0, neckRow: 1 }, band(neck.y + .015 * C.ss, .03 * C.ss, .1 * C.ss)));
+  for (let j = 1; j <= NR; j++) { const f = (j - 1) / (NR - 1), y = ySh + (yBot - ySh) * f;
+    rows.push(Object.assign({ y, f }, band(y, Math.abs(yBot - ySh) / NR * .8, y > yHip + .1 * C.ss ? armCut : 9))); }
+  let hip = null;   // ниже бёдер не уже бёдер; книзу свободнее
+  for (const r of rows) { if (r.y <= yHip && !hip) hip = { rx: r.rx, rz: r.rz, cx: r.cx, cz: r.cz }; if (hip && r.y < yHip) { r.rx = Math.max(r.rx, hip.rx * .98); r.rz = Math.max(r.rz, hip.rz * 1.05); r.cx = hip.cx; r.cz = r.cz * .5 + hip.cz * .5; }
+    if (r.neckRow) { r.rx += .022 * C.ss; r.rz += .022 * C.ss; continue; }   // ворот — у самой шеи
+    const loose = .05 + .3 * Math.pow(r.f, 1.4); r.rx = r.rx * (1 + loose) + .02 * C.ss; r.rz = r.rz * (1 + loose * 1.2) + .03 * C.ss; }
+  const pos = [], aB = [], aF = [], aS = [], si = [], sw = [], idx = [];
+  const bones = ['spine_03', 'spine_02', 'spine_01', 'pelvis', 'thigh_l', 'thigh_r'].filter(n => C.bone[n]), bi = n => bones.indexOf(n), yS3 = sp3.y, yS1 = sp1.y;
+  for (const r of rows) for (let i = 0; i <= NA; i++) {
+    const a = i / NA * Math.PI * 2, sa = Math.sin(a), ca = Math.cos(a), wave = 1 + .05 * r.f * Math.sin(a * 9 + .6) + .022 * r.f * Math.sin(a * 23);
+    const ell = 1 / Math.sqrt(Math.pow(sa / r.rx, 2) + Math.pow(ca / r.rz, 2)), w = new T.Vector3(r.cx + sa * ell * wave, r.y, r.cz + ca * ell * wave);
+    aB.push(w.x - base.x, w.y - base.y, w.z - base.z); aF.push(r.f); aS.push(sa, ca);
+    par.worldToLocal(w); pos.push(w.x, w.y, w.z);
+    let W;   // веса: грудь → поясница → таз; под тазом подол переходит на бедро своей стороны
+    if (r.y >= yS3) W = { spine_03: 1 };
+    else if (r.y >= yS1) { const k = (yS3 - r.y) / Math.max(.01, yS3 - yS1); W = { spine_03: 1 - k, spine_01: k }; }
+    else if (r.y >= yHip) { const k = (yS1 - r.y) / Math.max(.01, yS1 - yHip); W = { spine_01: 1 - k, pelvis: k }; }
+    else { const g = Math.min(1, Math.pow((yHip - r.y) / Math.max(.01, yHip - yBot), 1.15)) * .82, l = T.MathUtils.smoothstep(sa * side, -.55, .55); W = { pelvis: 1 - g, thigh_l: g * l, thigh_r: g * (1 - l) }; }
+    const ks = Object.keys(W).filter(n => bi(n) >= 0); while (ks.length < 4) ks.push(null);
+    for (const n of ks) { si.push(n ? bi(n) : 0); sw.push(n ? W[n] : 0); }
+  }
+  for (let j = 0; j < NR; j++) for (let i = 0; i < NA; i++) { const a = j * (NA + 1) + i, b = a + NA + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('aB', new T.Float32BufferAttribute(aB, 3));
+  geo.setAttribute('aF', new T.Float32BufferAttribute(aF, 1)); geo.setAttribute('aS', new T.Float32BufferAttribute(aS, 2)); geo.setIndex(idx);
+  geo.setAttribute('skinIndex', new T.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new T.Float32BufferAttribute(sw, 4)); geo.computeVertexNormals();
+  const m = new T.SkinnedMesh(geo, gownMat(C)); m.name = 'gown'; m.frustumCulled = false; par.add(m); m.updateWorldMatrix(true, false);
+  m.bind(new T.Skeleton(bones.map(n => C.bone[n]))); C.gown = m;
+}
+function gownMat(C) {
+  const m = litMat({ color: 0xffffff, side: T.DoubleSide }, .92);
+  if (!CINE) m.extensions = Object.assign({}, m.extensions, { derivatives: true });
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, { uWet: C.HU.uWet, uGore: C.HU.uGore });
+    sh.vertexShader = 'attribute vec3 aB; attribute float aF; attribute vec2 aS; varying vec3 vG; varying float vF; varying vec2 vS;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vG = aB; vF = aF; vS = aS;');
+    sh.fragmentShader = `uniform float uWet, uGore; varying vec3 vG; varying float vF; varying vec2 vS;
+float hh3(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+${HUM_NOISE}float gWet = 0., gA = 0., gN = 0.;
+` + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+  gA = atan(vS.x, vS.y); gN = vn3(vG * 7.);
+  if (vF > .93 - .08 * vn3(vec3(vG.x * 22., 0., vG.z * 22.)) - .04 * hh3(vec3(floor(gA * 9.), 1., 2.))) discard;   // рваный подол
+  if (vF > .62 && vn3(vG * 13.) > .8) discard;   // дыры у подола
+  float fold = sin(gA * 11. + gN * 4.) * (.1 + .16 * vF), dirt = smoothstep(.55, .78, vn3(vG * 8.5)) * .55 + vF * vF * .5; gWet = smoothstep(.62, .92, vF);
+  vec3 cloth = vec3(.44, .42, .37) * (1. + fold) * (1. - .4 * dirt) * mix(vec3(1.), vec3(.76, .63, .46), dirt * .8);
+  cloth *= 1. - .55 * gWet; cloth = mix(cloth, vec3(.05, .045, .04), .45 * gWet * smoothstep(.4, .7, vn3(vG * 30.)));
+  if (uGore > 0.) cloth = mix(cloth, vec3(.2, .012, .012), uGore * smoothstep(.62, .78, vn3(vG * 4. + 3.)) * (1. - vF));   // кровь на груди, когда ест
+  diffuseColor.rgb = cloth * (1. - .15 * uWet);`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+  { float hf = sin(gA * 11. + gN * 4.) * (.004 + .009 * vF) + vn3(vec3(vG.x * 50., vG.y * 5., vG.z * 50.)) * .003;   // складки рельефом
+    vec2 dh = vec2(dFdx(hf), dFdy(hf)); vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx); float det = dot(sx, r1);
+    vec3 nn = abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2); normal = dot(nn, nn) > 1e-24 ? normalize(nn) : normal; }`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(.93, .5, gWet);');
+  };
+  m.customProgramCacheKey = () => 'gown1' + (CINE ? 'c' : '');
+  return m;
 }
 
 // лицо v3 каждый кадр: моргание, взгляд, брови, речь, улыбка, страх, крик → веса лицевых форм на всех частях (кожа, глаза, ресницы, брови, зубы)
 function faceV3(C, tt, dt) {
-  const o = C.o, U = C.U, fs = C.faceSets[C.faceSet] || {}, W = C.W || (C.W = {});
+  const o = C.o, U = C.U, fs = C.fsNow || C.faceSets[C.faceSet] || {}, W = C.W || (C.W = {});
   for (const k in W) W[k] = 0;
   const add = (k, v) => { W[k] = (W[k] || 0) + v; };
   const live = !o.monster && !o.noBlink && !o.dead;
-  // моргание: веко закрывается за 70 мс, открывается за 120 мс; раз в 2–6 с, иногда дважды подряд
+  // выражение лица меняется посреди кадра (реакция на реплику) — перетекает за ~0,3 с, а не щёлкает; на склейке — сразу
+  const E = C.ex || (C.ex = {}), ke = C.cutNow || o.monster ? 1 : 1 - Math.exp(-dt * 7), ev = (k, v) => (E[k] = E[k] == null ? v : E[k] + (v - E[k]) * ke);
+  // моргание: веко закрывается за 70 мс, открывается за 120 мс. Говорит — чаще (раз в 2–4 с), слушает — реже, моргает в паузах говорящего;
+  // в страхе смотрит не моргая; перевёл взгляд далеко, начал или кончил фразу — часто моргает (C.blinkReq); каждое пятое — неполное
   if (live) {
     C.bT = (C.bT ?? 1 + rnd() * 3) - dt;
-    if (C.bT < 0 && C.bK == null) C.bK = 0;
-    if (C.bK != null) { C.bK += dt; if (C.bK > .19) { C.bK = null; C.bT = rnd() < .15 ? .22 : 2 + rnd() * 4; } }
-    const b = C.bK == null ? 0 : C.bK < .07 ? C.bK / .07 : Math.max(0, 1 - (C.bK - .07) / .12);
+    if ((C.bT < 0 || C.blinkReq) && C.bK == null) { C.bK = 0; C.bAmp = rnd() < .2 ? .6 + rnd() * .25 : 1; }
+    C.blinkReq = 0;
+    if (C.bK != null) { C.bK += dt; if (C.bK > .19) { C.bK = null; C.bT = rnd() < .12 ? .22 : fs.wide || fs.press ? 4 + rnd() * 5 : C.talkingNow ? 1.8 + rnd() * 2.4 : C.hearingNow ? 2.8 + rnd() * 3.7 : 2.2 + rnd() * 3.8; } }
+    const b = (C.bK == null ? 0 : C.bK < .07 ? C.bK / .07 : Math.max(0, 1 - (C.bK - .07) / .12)) * (C.bAmp || 1);
     add('eyeBlinkLeft', b); add('eyeBlinkRight', b);
   }
   if (o.dead) { add('eyeBlinkLeft', .7); add('eyeBlinkRight', .62); add('jawOpen', .18); }
   // взгляд: голова почти довернулась к цели — глаза доводят остаток. Живой взгляд держится на цели,
   // изредка — едва заметный скачок (1–2°); в тревоге — чаще и шире, но без беготни по сторонам
   if (!o.dead && C.lookDir && C.headFwd) {
-    C.bone.Head.getWorldQuaternion(_qa).invert(); _va.copy(C.lookDir).applyQuaternion(_qa);
+    C.bone.Head.getWorldQuaternion(_qa).invert(); _va.copy(C.eyeDir || C.lookDir).applyQuaternion(_qa);   // глаза — на цель (впереди головы), а не туда, куда успела повернуться голова
     const f = _va.dot(C.headFwd), left = _va.dot(C.headLeft), up = _va.dot(C.headUp);
     let yaw = Math.atan2(left, f), pitch = Math.atan2(up, f);
-    if (live) {
+    if (live) {   // микросаккады: слушает — переводит взгляд с глаза на глаз и изредка на рот; говорит — чуть шире; в тревоге — бегает
       const dart = fs.dart ? 1 : 0;
       C.sT = (C.sT ?? .5) - dt;
-      if (C.sT < 0) { C.sT = dart ? .45 + rnd() * .9 : 1.2 + rnd() * 2.6; C.sY = (rnd() - .5) * (dart ? .16 : .045); C.sP = (rnd() - .5) * (dart ? .07 : .025); }
-      const k = Math.min(1, dt * 28); C.cY = lerp(C.cY || 0, C.sY || 0, k); C.cP = lerp(C.cP || 0, C.sP || 0, k);
+      if (C.sT < 0) {
+        if (dart) { C.sT = .45 + rnd() * .9; C.sY = (rnd() - .5) * .16; C.sP = (rnd() - .5) * .07; }
+        else if (C.hearingNow) { const r = rnd(); C.sT = .35 + rnd() * .8; C.sY = r < .42 ? .02 : r < .84 ? -.02 : 0; C.sP = r < .84 ? .004 : -.04; }
+        else if (C.talkingNow) { C.sT = .6 + rnd() * 1.6; C.sY = (rnd() - .5) * .07; C.sP = (rnd() - .5) * .035; }
+        else { C.sT = 1 + rnd() * 2.4; C.sY = (rnd() - .5) * .05; C.sP = (rnd() - .5) * .025; }
+      }
+      const k = 1 - Math.exp(-dt * 45); C.cY = lerp(C.cY || 0, C.sY || 0, k); C.cP = lerp(C.cP || 0, C.sP || 0, k);
       yaw += C.cY; pitch += C.cP;
     }
     const Y = clamp(yaw / .6, -.85, .85), P = clamp(pitch / .45, -.8, .8);
@@ -1505,10 +1819,10 @@ function faceV3(C, tt, dt) {
   if (C.vis) {   // губы по буквам реплики: движок знает, какое слово звучит и какая в нём буква сейчас
     const v = C.vis === 'sil' ? null : C.vis;
     if (v !== C.vCur) { C.vPrev = C.vCur; C.vCur = v; C.vK = 0; }
-    C.vK = Math.min(1, (C.vK || 0) + dt / .045);
+    C.vK = Math.min(1, (C.vK || 0) + dt / .06);   // соседние звуки перетекают (коартикуляция), а не щёлкают каждую букву
     const g = clamp(.4 + m * .9, 0, .85);   // даже шёпот — губы работают; громче — шире
-    if (C.vPrev) add(C.vPrev, (1 - C.vK) * g);
-    if (C.vCur) add(C.vCur, C.vK * g);
+    if (C.vPrev) add(C.vPrev, (1 - C.vK) * g * (VW[C.vPrev] ?? 1));
+    if (C.vCur) add(C.vCur, C.vK * g * (VW[C.vCur] ?? 1));
     add('jawOpen', lerp(JAW[C.vPrev] || 0, JAW[C.vCur] || 0, C.vK) * (.6 + .5 * Math.min(1, m * 1.5)));
   } else if (m > .02) {   // нет текста (крик, плач, текст без озвучки) — по громкости
     C.vT = (C.vT ?? 0) - dt;
@@ -1521,18 +1835,21 @@ function faceV3(C, tt, dt) {
   } else { C.vPrev = C.vCur = null; }
   // улыбка; у «Лили» за стеклом — шире, чем бывает у людей
   // fs.dead — «мёртвая» улыбка: растёт ровно настолько, насколько задано (может начаться с нуля), а глаза в ней не участвуют — не щурятся, а распахнуты
-  const dead = fs.dead || 0, sm = dead ? +fs.smile || 0 : Math.max(o.smile || 0, fs.smile ? +fs.smile : 0), sq = dead ? 0 : 1;
+  const dead = ev('dead', fs.dead || 0), sm = ev('sm', fs.dead ? +fs.smile || 0 : Math.max(o.smile || 0, fs.smile ? +fs.smile : 0)), sq = fs.dead ? 0 : 1;
   if (sm) { add('mouthSmileLeft', Math.min(1, sm)); add('mouthSmileRight', Math.min(1, sm)); add('cheekSquintLeft', .35 * sm * sq); add('cheekSquintRight', .35 * sm * sq);
     if (sm > 1) {   // слишком широкая: губы растянуты до предела и разжаты — видны оба ряда зубов, щёки подпирают глаза
       const e = sm - 1, st = dead ? 2.9 : 2.4; add('mouthStretchLeft', e * st); add('mouthStretchRight', e * st); add('mouthUpperUpLeft', e * 1.8); add('mouthUpperUpRight', e * 1.8);
       add('mouthLowerDownLeft', e * 1.5); add('mouthLowerDownRight', e * 1.5); add('jawOpen', e * .35); add('cheekSquintLeft', e * sq); add('cheekSquintRight', e * sq); } }
   if (dead) { add('eyeWideLeft', .95 * dead); add('eyeWideRight', .95 * dead); add('browInnerUp', .22 * dead); }
-  if (fs.wide) { const w = fs.wide === true ? .7 : +fs.wide; add('eyeWideLeft', w); add('eyeWideRight', w); }
-  if (fs.tense) { add('mouthStretchLeft', fs.tense); add('mouthStretchRight', fs.tense); add('mouthShrugLower', fs.tense * .6); }   // губы оттянуты от страха, подбородок поджат
-  if (fs.mouth) add('jawOpen', fs.mouth * .55);
-  if (fs.frown) { add('mouthFrownLeft', fs.frown); add('mouthFrownRight', fs.frown); }
-  if (fs.squint) { add('eyeSquintLeft', fs.squint); add('eyeSquintRight', fs.squint); }
-  if (fs.press && !(m > .02)) { add('mouthPressLeft', fs.press); add('mouthPressRight', fs.press); add('viseme_PP', .35 * fs.press); }   // затаил дыхание: губы сжаты
+  { const w = ev('wide', fs.wide ? (fs.wide === true ? .7 : +fs.wide) : 0); if (w > .001) { add('eyeWideLeft', w); add('eyeWideRight', w); } }
+  { const v = ev('tense', fs.tense || 0); if (v > .001) { add('mouthStretchLeft', v); add('mouthStretchRight', v); } }   // губы оттянуты от страха
+  { const v = ev('mouth', fs.mouth || 0); if (v > .001) add('jawOpen', v * .55); }
+  { const v = ev('frown', fs.frown || 0); if (v > .001) { add('mouthFrownLeft', v); add('mouthFrownRight', v); } }
+  { const v = ev('squint', fs.squint || 0); if (v > .001) { add('eyeSquintLeft', v); add('eyeSquintRight', v); } }
+  { const v = ev('press', fs.press && !(m > .02) ? fs.press : 0); if (v > .001) { add('mouthPressLeft', v); add('mouthPressRight', v); add('viseme_PP', .35 * v); } }   // затаил дыхание: губы сжаты
+  // договорил фразу — на миг сжал губы (рот закрывается не «отпусканием» челюсти, а живым смыканием)
+  if (live) { if (m > .05) { C.qT = 0; C.spk = 1; } else { C.qT = (C.qT || 0) + dt;
+    if (C.spk && C.qT > .12 && C.qT < .45) { const v = .28 * Math.sin(Math.PI * (C.qT - .12) / .33); add('mouthPressLeft', v); add('mouthPressRight', v); } if (C.qT >= .45) C.spk = 0; } }
   // крик / бросок: челюсть до упора (у Жильца — дальше, чем может человек), губы растянуты, нос сморщен
   const scr = U.uScream.value;
   if (scr) {
@@ -1562,7 +1879,7 @@ function castV3() {
   // «не её лицо»: то же тело в жёлтой куртке, но глаза чёрные, кожа серая, улыбка шире человеческой, голова дёргается
   A.katyaThing = H(Object.assign({ name: 'katyaThing', noBlink: true, grey: .85, smile: 2.1, deadEyes: 0x000000, socket: 1, tilt: .22, jerk: true }, lily));
   // Оно: выше двери, истощённое, серая сухая кожа (не блестит), чёрные глаза, длинные пальцы и шея; мокрые чёрные волосы
-  A.monster = H({ name: 'monster', model: 'tenant', monster: true, h: 2.4, arm: 1.1, armL: 1.08, handS: 1.25, neck: 1.18, headS: .92, grey: 1, wet: .25,
+  A.monster = H({ name: 'monster', model: 'tenant', monster: true, shroud: true, gown: true, h: 2.4, arm: 1.1, armL: 1.08, handS: 1.25, neck: 1.18, headS: .92, grey: 1, wet: .25,
     deadEyes: 0x000000, socket: 1, tilt: .45, jerk: true, headMax: 2.3, stopmo: 1 / 7, tint: { skin: 0xa9b0a6, hair: [0x0a0a0a, 1, .6] } });
   A.monster.addFace('grin', { smile: 1.15, mouth: .5 });
   A.monster.addFace('scream', { scream: 1 });
@@ -1588,6 +1905,10 @@ function castV3() {
     F.gasp = F.gasp || { mouth: .2, wide: true, browUp: 1, browIn: .9, dart: 1 };   // ахнул: рот чуть приоткрыт (зубы почти не видны)
     F.terror = F.terror || { press: 1, wide: 1, browUp: 1, browIn: 1, frown: .45, tense: .35, dart: 1 };   // оцепенел от ужаса: глаза распахнуты, губы сжаты, уголки вниз
     F.calm = F.calm || { smile: .3, browUp: .1 };
+    F.sad = F.sad || { browIn: .75, browUp: .1, frown: .35, squint: .12 };   // горе: брови домиком, уголки губ вниз, веки чуть прикрыты
+    F.grim = F.grim || { browIn: -.45, frown: .25, squint: .22 };             // мрачно, сосредоточенно: брови сведены, взгляд тяжёлый
+    F.warm = F.warm || { smile: .45, browUp: .2, squint: .1 };                // тепло, по-доброму (не оскал): улыбка с прищуром
+    F.dread = F.dread || { mouth: .1, wide: .55, browUp: .8, browIn: 1, tense: .3, dart: 1 };   // понял, что натворил: глаза распахнуты, рот чуть приоткрыт, губы оттянуты (не крик)
   }
   for (const k in A) A[k].update(0, 1 / 30);
   return A;
