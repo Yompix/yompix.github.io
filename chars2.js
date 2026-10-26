@@ -885,13 +885,16 @@ function reachArm(C, sd, a) {
   const at = typeof a.at === 'function' ? a.at(C) : a.at;   // функция — точка от тела этого кадра (ухо, рот, грудь): мокап сидит и стоит по-своему, рука идёт за ним
   const want = new T.Vector3(at[0], at[1], at[2]), wrist = want.clone();
   if (a.by && a.by !== 'wrist') { const p = handPt(C, sd, a.by), hw = C.bone['hand_' + sd].getWorldPosition(new T.Vector3()); wrist.add(hw.sub(p)); }
+  const arm = ['upperarm_', 'lowerarm_', 'hand_'].map(n => C.bone[n + sd]), q0 = k < 1 && a.by && a.by !== 'wrist' ? arm.map(b => b.quaternion.clone()) : null;   // рука только тянется (вес < 1): кончик пальца считаем от кисти в конечной позе, а не от позы клипа — иначе палец пролетал цель (сквозь стекло)
   for (let it = 0; it < 3; it++) {
     const lp = C.root.worldToLocal(wrist.clone());
-    ik2(C, 'upperarm_' + sd, 'lowerarm_' + sd, 'hand_' + sd, lp.x, lp.y, lp.z, pole, k);
-    if (a.fdir) orientHand(C, sd, a.fdir, a.pdir, k);
-    if (!a.by || a.by === 'wrist' || k < 1) break;
+    ik2(C, 'upperarm_' + sd, 'lowerarm_' + sd, 'hand_' + sd, lp.x, lp.y, lp.z, pole, q0 ? 1 : k);
+    if (a.fdir) orientHand(C, sd, a.fdir, a.pdir, q0 ? 1 : k);
+    if (!a.by || a.by === 'wrist' || (k < 1 && !q0)) break;
     wrist.add(want.clone().sub(handPt(C, sd, a.by)));
   }
+  if (q0) { arm.forEach((b, i) => b.quaternion.copy(q0[i])); const lp = C.root.worldToLocal(wrist.clone());   // и уже к найденной точке — с весом
+    ik2(C, 'upperarm_' + sd, 'lowerarm_' + sd, 'hand_' + sd, lp.x, lp.y, lp.z, pole, k); if (a.fdir) orientHand(C, sd, a.fdir, a.pdir, k); }
 }
 function leanTo(C, to, k) {   // корпус к точке: поясница и грудь поровну
   C.root.updateWorldMatrix(true, true);
@@ -997,6 +1000,20 @@ function propAt(name, scene, pos, rot) { const pr = prop3(name); if (pr.obj.pare
 function propAim(name, scene, pos, dir, yaw = 0) { const pr = prop3(name); if (pr.obj.parent !== scene) scene.add(pr.obj); pr.obj.position.set(...pos);
   pr.obj.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3(...dir).normalize()).multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), yaw)); pr.obj.visible = true; pr.C = null; }
 function propsFrame() { for (const k in PROPS3) { const pr = PROPS3[k]; pr.was = pr.obj.visible; pr.obj.visible = false; pr.obj.updateMatrix(); } }
+// тело на полу: сустав, ушедший ниже пола (судороги, клип «лёжа»), кость над ним поднимает — поворотом в суставе вокруг горизонтальной оси, сверху вниз по цепочке
+const LAY_CH = [['spine_02', 'neck_01', .1], ['neck_01', 'Head', .1], ['thigh_l', 'calf_l', .07], ['calf_l', 'foot_l', .05], ['thigh_r', 'calf_r', .07], ['calf_r', 'foot_r', .05],
+  ['upperarm_l', 'lowerarm_l', .05], ['lowerarm_l', 'hand_l', .04], ['upperarm_r', 'lowerarm_r', .05], ['lowerarm_r', 'hand_r', .04]];
+const _lf = [new T.Vector3(), new T.Vector3(), new T.Vector3(), new T.Vector3(0, 1, 0), new T.Quaternion(), new T.Quaternion()];
+function layFloor(C) {
+  const fy = C.root.position.y < .2 ? 0 : C.root.position.y - .085, [pa, pb, ax, UP, q, wq] = _lf;   // пол: лежит на полу — y 0, на возвышении — под корнем
+  for (const [a, b, r] of LAY_CH) { const A = C.bone[a], B = C.bone[b]; if (!A || !B) continue;
+    A.getWorldPosition(pa); B.getWorldPosition(pb); const d = fy + r - pb.y; if (d <= 0) continue;
+    const vx = pb.x - pa.x, vy = pb.y - pa.y, vz = pb.z - pa.z, L = Math.hypot(vx, vy, vz); if (L < .02) continue;
+    ax.set(vx, 0, vz).cross(UP); if (ax.lengthSq() < 1e-8) continue; ax.normalize();
+    const ang = Math.asin(clamp((vy + d) / L, -1, 1)) - Math.asin(clamp(vy / L, -1, 1));
+    q.setFromAxisAngle(ax, ang); if (pb.sub(pa).applyQuaternion(q).y < vy) q.setFromAxisAngle(ax, -ang);   // в какую сторону «вверх» — проверкой
+    A.getWorldQuaternion(wq).premultiply(q); A.parent.updateWorldMatrix(true, false); A.quaternion.copy(A.parent.getWorldQuaternion(_lf[4]).invert().multiply(wq)); A.updateWorldMatrix(false, true); }
+}
 // ступни под бёдрами, подошва на полу (у стойки клипов ноги широко, как у борца)
 function feetIn(C, P) {
   const ss = C.ss;
@@ -1368,6 +1385,7 @@ function updateSkinned(C, t, dt) {
     fist(C, 'r', .6 + .4 * Math.sin(f * 2)); fist(C, 'l', .6 + .4 * Math.sin(f * 2.3));
   }
   if (P === 'lay' && C.twitch > 0) { const w = C.twitch * Math.pow(Math.max(0, Math.sin(tt * 3.1)), 12); wiggle(C, 'hand_r', [0, 0, 1], w * .6); fist(C, 'r', w); }
+  if (P === 'lay') layFloor(C);   // судороги не уводят руки, ноги и спину под пол
   // ноги не держат: идёт, оседая на каждом шаге, корпус ведёт в сторону
   if (P === 'weak') { aimBone(C, 'spine_01', 'spine_02', [Math.sin(tt * 2.2) * .25, 1, .35], .8); wiggle(C, 'calf_l', [1, 0, 0], .35 + .25 * Math.sin(tt * 4.4)); wiggle(C, 'calf_r', [1, 0, 0], .35 - .25 * Math.sin(tt * 4.4)); }
   // голова смотрит на цель (обычно в камеру): доворачиваем «нос» головы к цели поверх анимации, поровну шее и голове

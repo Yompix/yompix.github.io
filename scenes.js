@@ -28,7 +28,8 @@ function aoEdge(S, w, x, z, ry, ceilY) {
   const dx = ry ? (ry > 0 ? .006 : -.006) : 0, dz = ry ? 0 : (Math.abs(ry) === PI ? -.006 : .006);
   const f = plane(w, .9, AO_M, S); f.rotation.set(-PI / 2, 0, ry); f.position.set(x, .005, z);
   const v = plane(w, .7, AO_M, S); v.rotation.y = ry; v.position.set(x + dx, 0, z + dz);
-  if (ceilY) { const c = plane(w, .7, AO_M, S); c.rotation.y = ry; c.position.set(x + dx, ceilY, z + dz); }
+  f.userData.solid = v.userData.solid = false;   // тень на стене и полу — не преграда (стена сама твёрдая)
+  if (ceilY) { const c = plane(w, .7, AO_M, S); c.rotation.y = ry; c.position.set(x + dx, ceilY, z + dz); c.userData.solid = false; }
 }
 /* ---------- холл бизнес-центра + улица перед ним ---------- */
 function buildLobby() {
@@ -110,7 +111,7 @@ function buildLobby() {
   const ex = plane(.5, .25, mat(0xffffff, TX.exit, { basic: true }), S); ex.rotation.y = PI / 2; ex.position.set(-7.97, 2.6, -3.5);
   box(.06, 2.2, 1.0, mat(0xffffff, TX.door), -7.96, 1.1, -3.5, S);
   // пальма в кадке у первого лифта и её тень на стене: на камере 04 её легко принять за человека («тень от кадки с пальмой»)
-  { const pg = new T.Group(); pg.position.set(-3.5, 0, -5.42); S.add(pg); o.palm = pg;
+  { const pg = new T.Group(); pg.position.set(-3.5, 0, -5.42); S.add(pg); o.palm = pg; pg.userData.solid = [[0, .23, 0, .48, .46, .48, 'кадка с пальмой'], [0, 1.15, 0, .12, 1.4, .12, 'ствол пальмы'], [0, 1.72, 0, 1.3, .36, 1.3, 'крона пальмы']];   // листья — тонкие пластинки во все стороны: твёрдыми не годятся, твёрдая — гуща кроны
     cyl(.24, .18, .46, 12, mat(0x2b2a28, null, { rough: .5 }), pg).position.y = .23; cyl(.23, .23, .03, 12, mat(0x2a2016), pg).position.y = .45;
     const tk = mat(0x5a4632, null, { rough: .9 }); for (let i = 0; i < 6; i++) { const s = cyl(.045 - i * .004, .05 - i * .004, .24, 7, tk, pg); s.position.set(Math.sin(i * .7) * .02, .58 + i * .22, 0); }
     const lf = mat(0x2c4a26, null, { rough: .7, side: T.DoubleSide });
@@ -274,7 +275,7 @@ function buildLobby() {
         [[.18, .45, .07, .18], [.35, .3, .07, .23], [.52, .26, .07, .25], [.68, .31, .065, .22], [.88, .58, .06, .14]].forEach(([fx, fy, rw, rh]) => blob(x, w * fx, h * fy, w * rw, h * rh, .9)); }), S);
       o.bSmear = plane(.17, 1, mk((x, w, h) => { x.clearRect(0, 0, w, h); for (let i = 0; i < 9; i++) { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,.1)'); x.fillStyle = g; x.fillRect(w * (.08 + i * .1), 0, w * (.03 + (i % 3) * .015), h); } }), S);
       o.bFog = plane(.32, .24, mk((x, w, h) => { x.clearRect(0, 0, w, h); const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); }), S);
-      for (const m of [o.bPalm, o.bSmear, o.bFog]) { m.rotation.y = PI; m.visible = false; m.renderOrder = 3; } }
+      for (const m of [o.bPalm, o.bSmear, o.bFog]) { m.rotation.y = PI; m.visible = false; m.renderOrder = 3; m.userData.solid = false; } }   // следы на стекле — не преграда (само стекло — да)
     // будка закрытая: над левой стойкой тоже стекло, сзади перегородка (панель + стекло), справа дверь с замком и глухая панель до стены
     for (const [x, z, w, ry] of [[3.62, -.55, 1.96, PI / 2], [5.81, -1.55, 4.38, 0]]) {
       const pg = new T.Group(); pg.position.set(x, 0, z); pg.rotation.y = ry; S.add(pg);
@@ -470,8 +471,8 @@ function buildFacade(o, S) {
   o.breath.rotation.y = PI; o.breath.position.set(.6, 1.4, 5.992); o.breath.visible = false; o.breath.userData.solid = false;
   // запотевшее стекло изнутри (у двери, на уровне лица): по нему Итан выводит пальцем «Как звали собаку?» — сквозь буквы видно улицу
   { const c = document.createElement('canvas'); c.width = 512; c.height = 256; const tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
-    o.fogW = plane(.8, .4, ps1(new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, color: 0x6a7278 })), S); o.fogW.rotation.y = PI; o.fogW.position.set(.62, 1.42, 5.988); o.fogW.visible = false;
-    o.fogW.userData = { c, x: c.getContext('2d'), tx, k: -9 }; }
+    o.fogW = plane(.8, .4, ps1(new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, color: 0x6a7278 })), S); o.fogW.rotation.y = PI; o.fogW.position.set(.62, 1.42, 5.988); o.fogW.visible = false; o.fogW.userData.solid = false;
+    o.fogW.userData = { c, x: c.getContext('2d'), tx, k: -9, solid: false }; }
   o.doorLock = [-.1, 1.05, 5.925];   // замок — на левой створке у притвора (сама личинка — в buildFacade ниже, вместе со створкой)
   // мокрые следы босых ног: от двери к первому лифту (видны только по сюжету)
   { const ft = ctex(32, 64, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = 'rgba(0,0,0,1)'; x.filter = 'blur(1.5px)';
@@ -483,7 +484,7 @@ function buildFacade(o, S) {
     for (let i = 0; i < 26; i++) { const u = i / 25, p = path.getPointAt(u), d = path.getTangentAt(Math.min(.999, u)), n = new T.Vector2(d.y, -d.x).multiplyScalar(i % 2 ? .09 : -.09);
       const f = plane(.11, .24, fm, o.wetSteps); f.rotation.x = -PI / 2; f.rotation.z = Math.atan2(d.x, d.y) + PI; f.position.set(p.x + n.x, .006, p.y + n.y); f.scale.x = i % 2 ? -1 : 1; } }
   // плёнка: «ГОРИЗОНТ» на фрамуге (снаружи читается, изнутри зеркально) и «ОТ СЕБЯ» на створках (изнутри)
-  const lg = plane(1.9, .36, new T.MeshLambertMaterial({ map: TX.logo, transparent: true, depthWrite: false, side: T.DoubleSide, emissive: 0x15181b }), S); lg.position.set(0, 2.72, 6.004); ps1(lg.material);
+  const lg = plane(1.9, .36, new T.MeshLambertMaterial({ map: TX.logo, transparent: true, depthWrite: false, side: T.DoubleSide, emissive: 0x15181b }), S); lg.position.set(0, 2.72, 6.004); ps1(lg.material); lg.userData.solid = false;
   // рамы: толстый тёмный профиль, двери — две створки между x = −1 и 1
   const frM = mat(0x24272b), stM = mat(0x9aa0a6), kickM = mat(0x5a5f64);
   for (let x = -8; x <= 8.01; x += 2) if (Math.abs(x) > .5) box(.1, 3.5, .16, frM, x, 1.75, 6, S);
@@ -502,7 +503,7 @@ function buildFacade(o, S) {
     box(.62, .032, .032, stM, cx, 1.02, -.11, lf); for (const d of [-.29, .29]) box(.028, .028, .085, stM, cx + d, 1.02, -.065, lf);
     box(.032, .5, .032, stM, X(s * .14), 1.12, .11, lf); for (const d of [-.22, .22]) box(.028, .028, .085, stM, X(s * .14), 1.12 + d, .065, lf);
     box(.3, .06, .07, mat(0x3a3d40), cx, 2.24, -.1, lf);                                              // доводчик
-    const st = plane(.13, .065, mat(0xffffff, TX.sticker, { transparent: true }), lf); st.rotation.y = PI; st.position.set(X(s * .55), 1.22, -.005);
+    const st = plane(.13, .065, mat(0xffffff, TX.sticker, { transparent: true }), lf); st.rotation.y = PI; st.position.set(X(s * .55), 1.22, -.005); st.userData.solid = false;
     const g = new T.Mesh(new T.PlaneGeometry(.9, 2.02), gm); g.position.set(cx, 1.28, 0); lf.add(g); o.leafGlass.push(g);
     if (s < 0) { const lk = cyl(.022, .022, .03, 12, mat(0xb8bcc0, null, { metal: .9, rough: .3 }), lf); lk.rotation.x = PI / 2; lk.position.set(X(-.1), 1.05, -.06); }
   }
@@ -950,7 +951,7 @@ function atGlass(k, pose, look, z = 6.27) { A[k].glassD = z - 6 - .03; return [[
 // пар от дыхания Тёмыча на стекле изнутри: вдох-выдох раз в 3.6 с; с её стороны стекло чистое
 function breath(o, t) { const ph = (t + .9) % 3.6, a = ph < .4 ? ph / .4 : Math.max(0, 1 - (ph - .4) / 2.5); o.breath.visible = a > 0; o.breath.material.opacity = .55 * a; o.breath.scale.setScalar(.85 + .25 * Math.min(1, ph / .7)); }
 const SH = {
-  hall_cam: { loc: 'lobby', pos: [7.45, 3.85, 5.45], look: [-2.2, .9, -5], fov: 72, set: (o, t) => [['temych', SEAT[0], 0, SEAT[1], 0, 'sit', [5, 1, 3]], ['monster', -3.0, 0, -4.8, .5, 'monster', 'cam']] },   // у пальмы, но не ногой в кадке
+  hall_cam: { loc: 'lobby', pos: [7.45, 3.85, 5.45], look: [-2.2, .9, -5], fov: 72, set: (o, t) => [['temych', SEAT[0], 0, SEAT[1], 0, 'sit', [5, 1, 3]], ['monster', -2.35, 0, -4.55, .5, 'monster', 'cam']] },   // у пальмы, но не в кроне (на 1,4 м от ствола: листья проходили сквозь него)
   hall_cam_empty: { loc: 'lobby', pos: [7.45, 3.85, 5.45], look: [-2.2, .9, -5], fov: 72, set: () => [['temych', SEAT[0], 0, SEAT[1], 0, 'sit', [5, 1, 3]]] },
   hall_cam_near: { loc: 'lobby', pos: [7.45, 3.85, 5.45], look: [-2.2, .9, -5], fov: 72, set: () => [['temych', SEAT[0], 0, SEAT[1], 0, 'sit', [5, 1, 3]], ['monster', -1.2, 0, -2.4, .8, 'monster', 'cam']] },
   hall_cam_nearer: { loc: 'lobby', pos: [7.45, 3.85, 5.45], look: [-2.2, .9, -5], fov: 72, set: () => [['temych', SEAT[0], 0, SEAT[1], 0, 'sit', [5, 1, 3]], ['monster', 2.2, 0, -.6, 1.2, 'monster', 'cam']] },
@@ -1325,7 +1326,7 @@ SH.k3_answer = Object.assign({}, SH.booth_radio, { set: (o, t) => [['temych', SE
 // ---- стеклянная дверь (03:30): «Лили» снаружи, Итан внутри ----
 let fogBase = null;
 function fogWrite(o, k) {   // туман на стекле; k — сколько надписи выведено (0..1); возвращает, где сейчас кончик пальца (мир)
-  const F = o.fogW, d = F.userData, x = d.x, L = [tr('Как звали'), tr('собаку?')], x0 = 44, ys = [118, 200];
+  const F = o.fogW, d = F.userData, x = d.x, L = [tr('Как звали'), tr('собаку?')], x0 = 66, ys = [118, 200];
   F.visible = true; x.font = '700 72px "Comic Sans MS", "Segoe Print", Arial';
   if (!fogBase) { fogBase = document.createElement('canvas'); fogBase.width = 512; fogBase.height = 256; const f = fogBase.getContext('2d'); let s = 3; const R = () => ((s = (s * 16807) % 2147483647) / 2147483647);
     f.save(); f.scale(1, .55); const gr = f.createRadialGradient(256, 233, 10, 256, 233, 245); gr.addColorStop(0, 'rgba(235,240,245,.62)'); gr.addColorStop(.6, 'rgba(235,240,245,.4)'); gr.addColorStop(1, 'rgba(235,240,245,0)'); f.fillStyle = gr; f.fillRect(0, 0, 512, 470); f.restore();   // пятно дыхания — овал без краёв
@@ -1336,12 +1337,12 @@ function fogWrite(o, k) {   // туман на стекле; k — скольк�
     L.forEach((s, i) => { const f = clamp(k * 2 - i, 0, 1); if (f <= 0) return; const w = x.measureText(s).width; x.save(); x.beginPath(); x.rect(x0 - 10, ys[i] - 80, (w + 20) * f, 100); x.clip(); x.strokeText(s, x0, ys[i]); x.fillText(s, x0, ys[i]); x.restore(); });
     x.globalCompositeOperation = 'source-over'; d.tx.needsUpdate = true; }
   const i = Math.min(1, Math.floor(k * 2)), f = clamp(k * 2 - i, 0, 1), w = x.measureText(L[i]).width, px = x0 + w * f, py = ys[i] - 26 + Math.sin(f * 46) * 16;
-  return [.62 - (px / 512 - .5) * .8, 1.42 + (.5 - py / 256) * .4, 5.986];
+  return [.62 - (px / 512 - .5) * .8, 1.42 + (.5 - py / 256) * .4, 5.976];
 }
 const LZ = 6.3, LX = .62, EYE_IN = [.78, 1.66, 5.52];   // где стоит «Лили» снаружи; где глаза Итана у двери
 // поза у стекла: mode 'press' — ладони на стекле, всхлипывает; 'look' — оглянулась назад; 'slam' — бьёт ладонями; 'scratch' — ногти по стеклу сверху вниз; 'stand' — руки опущены
 function lilyGlass(t, mode, o2 = {}) {
-  const R = locR(LX, LZ, PI), gz = LZ - 6.014, sob = mode === 'press' || mode === 'slam' ? Math.pow(Math.max(0, Math.sin(t * 3.3)), 6) : 0;
+  const R = locR(LX, LZ, PI), gz = LZ - 6.03, sob = mode === 'press' || mode === 'slam' ? Math.pow(Math.max(0, Math.sin(t * 3.3)), 6) : 0;
   let hit = 0; if (mode === 'slam') for (const h of [.3, .62, 1.6, 1.9]) hit = Math.max(hit, Math.exp(-Math.pow((t - h) / .07, 2)));
   const away = mode === 'slam' ? .06 * (1 - hit) * seg(t, 0, .25) : 0, k = mode === 'stand' || mode === 'look' ? 0 : 1;
   const ly = mode === 'scratch' ? lerp(1.62, 1.08, seg(t, .3, 3.6)) : 1.38;
@@ -1418,9 +1419,9 @@ SH.e_hands = { loc: 'lobby', pos: [.95, 1.72, 6.05], look: [.55, 1.36, 5.15], fo
 SH.e_face = { loc: 'lobby', pos: [.6, 1.64, 5.55], look: [.55, 1.62, 4.95], fov: 34, face: { temych: 'dread' }, set: (o, t) => [['temych', .55, 0, 4.95, 0, { clips: [['Idle_Loop', t + 1.3, 1]], talk: 1, legs: 'feet' }, 'cam']] };
 // ---- А1: будка. Запер дверь будки, выключил лампу, сполз под стойку; утром сменщик пятится; отражение в стекле ----
 SH.h_lock = { loc: 'lobby', pos: [6.2, 1.6, -.75], look: [7.35, 1.05, .4], fov: 40, set: (o, t) => [['temych', 7.12, 0, -.05, .35, ethanKey(o, t, o.boothLock, .9), null]] };
-SH.h_lamp = { loc: 'lobby', pos: [6.75, 1.25, -.85], look: [6.12, .85, -.12], fov: 40, set: (o, t) => { const off = t > .75; o.lamp.intensity = off ? 0 : 1.6; o.lampBulb.visible = !off;
-  const R = locR(6.35, -.75, -.6), k = seg(t, 0, .55) * (1 - seg(t, 1.0, 1.5));
-  return [['temych', 6.35, 0, -.75, -.6, { clips: [['Idle_Loop', t + 1.3, 1]], legs: 'feet', spine: { to: [6.15, .85, -.1], k: .25 * k }, arm: { r: { at: [6.16, .835, -.07], by: 'tip', fdir: [0, -1, .3], w: k } }, fing: { r: ['point', k] }, look: [6.1, .85, -.1] }, null]]; } };
+SH.h_lamp = { loc: 'lobby', pos: [5.55, 1.2, -.8], look: [6.5, 1.3, -.3], fov: 50, set: (o, t) => { const off = t > .75; o.lamp.intensity = off ? 0 : 1.6; o.lampBulb.visible = !off;
+  const k = seg(t, 0, .55) * (1 - seg(t, 1.0, 1.5));   // стоит справа от второго стула (на нём куртка Фрэнка — раньше Итан стоял прямо в нём), камера — из-за стола: лицо в свете лампы, щелчок — темно
+  return [['temych', 6.68, 0, -.36, -1.1, { clips: [['Idle_Loop', t + 1.3, 1]], legs: 'feet', spine: { to: [6.15, .85, -.1], k: .25 * k }, arm: { r: { at: [6.16, .835, -.07], by: 'tip', fdir: [0, -1, .3], w: k } }, fing: { r: ['point', k] }, look: [6.1, .85, -.1] }, null]]; } };
 // сполз под стойку: сидит на корточках, спиной к передней стойке
 const CROUCH = [5.75, -.1];   // сидит на корточках за стойкой: таз и спина на 32–48 см позади корня — точка на 15 см дальше от панели стойки (раньше спина проходила сквозь неё; проверка — World.clips)
 // под столом: стол 0,78 м — на корточках голова была выше столешницы и торчала сквозь неё; поэтому таз ниже, корпус сжат вперёд (голова ~0,52)
@@ -1556,17 +1557,63 @@ function twistHead(C, up, ang) {   // голова за предел: шея и 
     b.parent.updateWorldMatrix(true, false); b.quaternion.copy(b.parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(wq)); b.updateWorldMatrix(false, true); }
 }
 const goreWho = kind => ({ V: /F$/.test(kind) ? 'mihalych' : 'temych', K: /L$/.test(kind) ? 'katyaThing' : /D$/.test(kind) ? 'ethanThing' : 'monster', base: kind.replace(/[LDF]$/, '') });
+// финал смерти — на свободном месте: там, куда смотрел кадр, бывает стол, стена, тесная будка (тела уходили в стену, камера — за спину). Ищем рядом пятак
+// по коллайдерам твёрдого мира: тела и обе камеры (общий и крупный план) стоят в пустом, между камерой и телами нет стены, место видно с исходной камеры
+// (та же комната); не нашлось — поворачиваем взгляд. Одно место на смерть — у общего и крупного плана одинаковое
+const GFIT = {};
+const goreCamD = (lay, dist, shift) => Math.max(lay ? 1.6 : 2.05, dist - shift);   // общий план: стоя — не ближе 2 м (иначе голова срезана краем кадра), лёжа — 1,6 м
+function goreFit(base, kind, lay, P, dir, shift, dist) {
+  const key = base.loc + '|' + base.pos.join(',') + '|' + kind; if (key in GFIT) return GFIT[key];
+  const o = L[base.loc], bk = goreWho(kind).base, side = bk === 'face' || goreWho(kind).K !== 'monster', F = [], FT = [], why = GFIT['?' + key] = {};   // следы предметов на полу; FT — высокие (заслоняют взгляд)
+  o.reset(); o.S.updateMatrixWorld(true);
+  for (const K of solidCols(o)) { solidNow(K); if (!K.on) continue;
+    const ey = K.kind === 'cyl' ? Math.abs(K.u[1].y) * K.e[1] + Math.sqrt(Math.max(0, 1 - K.u[1].y * K.u[1].y)) * K.e[0] : Math.abs(K.u[0].y) * K.e[0] + Math.abs(K.u[1].y) * K.e[1] + Math.abs(K.u[2].y) * K.e[2], lo = K.c.y - ey, hi = K.c.y + ey;
+    if (hi < .15 || lo > 1.9) continue;   // под ногами или над головой
+    let f; if (K.kind === 'cyl' && Math.abs(K.u[1].y) > .9) f = [K.c.x, K.c.z, K.e[0]];
+    else { const best = [0, 1, 2].sort((i, j) => Math.hypot(K.u[j].x, K.u[j].z) * K.e[j] - Math.hypot(K.u[i].x, K.u[i].z) * K.e[i])[0], h = Math.hypot(K.u[best].x, K.u[best].z) || 1, ax = K.u[best].x / h, az = K.u[best].z / h;
+      const ext = (x, z) => [0, 1, 2].reduce((a, i) => a + Math.abs(K.u[i].x * x + K.u[i].z * z) * (K.kind === 'cyl' && i !== 1 ? K.e[0] : K.e[i]), 0);
+      f = [K.c.x, K.c.z, ax, az, ext(ax, az), ext(-az, ax)]; }
+    f.lo = lo; F.push(f); if (hi > 1.45) FT.push(f); }
+  const dF = (L2, x, z, low) => { let m = 1e9; for (const f of L2) { if (low && f.lo > .4) continue; let d;   // лежащему телу стол сверху не мешает
+    if (f.length === 3) d = Math.hypot(x - f[0], z - f[1]) - f[2];
+    else { const qx = x - f[0], qz = z - f[1], qa = Math.abs(qx * f[2] + qz * f[3]) - f[4], qb = Math.abs(-qx * f[3] + qz * f[2]) - f[5]; d = qa > 0 || qb > 0 ? Math.hypot(Math.max(qa, 0), Math.max(qb, 0)) : Math.max(qa, qb); }
+    if (d < m) m = d; } return m; };
+  const sight = (ax, az, bx, bz) => {   // отрезок взгляда не пересекает высокий предмет (точно, а не по точкам: стекло тонкое — точки его перепрыгивали)
+    for (const f of FT) {
+      if (f.length === 3) { const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1, k = clamp(((f[0] - ax) * dx + (f[1] - az) * dz) / L2, 0, 1); if (Math.hypot(ax + dx * k - f[0], az + dz * k - f[1]) < f[2]) return false; continue; }
+      const A = (x, z) => [(x - f[0]) * f[2] + (z - f[1]) * f[3], -(x - f[0]) * f[3] + (z - f[1]) * f[2]], p = A(ax, az), q = A(bx, bz); let t0 = 0, t1 = 1, hit = true;
+      for (const [a, b, e] of [[p[0], q[0], f[4] + .03], [p[1], q[1], f[5] + .03]]) { const d = b - a; if (Math.abs(d) < 1e-9) { if (Math.abs(a) > e) { hit = false; break; } continue; }
+        let u = (-e - a) / d, v = (e - a) / d; if (u > v) [u, v] = [v, u]; t0 = Math.max(t0, u); t1 = Math.min(t1, v); if (t0 > t1) { hit = false; break; } }
+      if (hit) return false; }
+    return true; };
+  const ok = (px, pz, dx, dz) => { const rx = dz, rz = -dx, at = (f, r) => [px + dx * f + rx * r, pz + dz * f + rz * r], body = [];
+    if (bk === 'drag') for (const f of [.7, .25, -.2, -.65, -1.1, -1.55, -1.9]) body.push([...at(f, 0), .32, 0]);
+    else if (lay) { for (const r of [-.85, -.42, 0, .42, .85]) body.push([...at(.12, r), .26, 1]); body.push([...(bk === 'limb' ? at(-.45, -.5) : at(-.5, .15)), .42, 0]); }
+    else body.push([...at(.15, 0), .3, 0], [...(side ? at(.05, .5) : at(-.24, .04)), .36, 0]);
+    const no = w => { why[w] = (why[w] || 0) + 1; return false; };   // почему не подошло (для проверки: World.gfit)
+    for (const [x, z, r, low] of body) if (dF(F, x, z, low) < r) return no('тело');
+    const cams = [at(lay ? 1.05 : 1.15, 0), at(goreCamD(lay, dist, shift), 0)];
+    for (const [x, z] of cams) { if (dF(F, x, z) < .28) return no('камера в предмете'); if (!sight(x, z, px, pz)) return no('камере заслоняет'); }
+    return !room || sight(base.pos[0], base.pos[2], px, pz) || no('не та комната'); };   // с места исходной камеры видно — та же комната, а не за стеной
+  let room = true;   // сперва — в той же комнате (видно с исходной камеры); в тесной будке места нет — тогда рядом за стеклом, в холле (вытащило наружу)
+  for (const pass of [0, 1]) { room = !pass;
+  for (const da of [0, .3, -.3, .6, -.6, .95, -.95, 1.3, -1.3, 1.75, -1.75, PI]) { const c = Math.cos(da), sn = Math.sin(da), dx = dir.x * c + dir.z * sn, dz = -dir.x * sn + dir.z * c;
+    for (const r of [0, .2, .4, .6, .85, 1.1, 1.4, 1.8, 2.2, 2.7]) for (let j = 0, n = r ? 16 : 1; j < n; j++) { const px = P.x + Math.cos(j / n * PI * 2) * r, pz = P.z + Math.sin(j / n * PI * 2) * r;
+      if (ok(px, pz, dx, dz)) return (GFIT[key] = { P: new T.Vector3(px, 0, pz), dir: new T.Vector3(dx, 0, dz) }); } } }
+  return (GFIT[key] = null);   // тесно везде — как было
+}
 function goreShot(id) {
   if (GORE[id]) return GORE[id]; const m = /^gore@([a-z0-9_]+):([a-zA-Z]+)(\|c)?$/.exec(id); if (!m) return null;
   const base = SH[ALIAS[m[1]] || m[1]]; if (!base || !base.pos || !base.look) return null;
   const kind = m[2], close = !!m[3], { base: bk } = goreWho(kind), lay = /^(eat|drag|limb|heart)$/.test(bk), from = new T.Vector3(base.pos[0], 0, base.pos[2]), P = new T.Vector3(base.look[0], 0, base.look[2]);
   const d0 = from.distanceTo(P); if (d0 > 4.5) P.lerp(from, 1 - 3.5 / d0);   // смотрели далеко (камера наблюдения) — место ближе к камере
-  const dir = from.clone().sub(P).normalize(), dist = clamp(from.distanceTo(P), 1.5, 2.4), P0 = P.clone();
-  P.addScaledVector(dir, Math.min(.5, from.distanceTo(P) * .25));   // люди — на полметра ближе к камере (там, куда смотрели, бывает стена или проём); камера — где была
+  let dir = from.clone().sub(P).normalize(); const dist = clamp(from.distanceTo(P), 1.5, 2.4), shift = Math.min(.5, from.distanceTo(P) * .25);
+  P.addScaledVector(dir, shift);   // люди — на полметра ближе к камере (там, куда смотрели, бывает стена или проём); камера — где была
+  const fit = goreFit(base, kind, lay, P, dir, shift, dist); if (fit) { P.copy(fit.P); dir = fit.dir; }   // а если и там тесно — ближайший свободный пятак (goreFit)
   const wh = { chest: 1.3, hang: 1.75, neck: 1.6, throat: 1.5, face: 1.62, eyes: 1.65 }[bk] || 1.3;   // высота раны (крупный план)
   const cam = close ? (lay ? [P.x + dir.x * 1.05, .95, P.z + dir.z * 1.05] : [P.x + dir.x * 1.15, wh + .05, P.z + dir.z * 1.15])
-    : [P0.x + dir.x * dist, lay ? clamp(base.pos[1], .9, 1.6) : clamp(base.pos[1], 1.25, 1.8), P0.z + dir.z * dist];
-  return (GORE[id] = { loc: base.loc, pos: cam, look: close ? [P.x, lay ? .22 : wh - .05, P.z] : [P.x, lay ? .3 : 1.2, P.z], fov: close ? 38 : lay ? 52 : 46, gore: kind,
+    : [P.x + dir.x * goreCamD(lay, dist, shift), lay ? clamp(base.pos[1], .9, 1.6) : clamp(base.pos[1], 1.3, 1.8), P.z + dir.z * goreCamD(lay, dist, shift)];
+  return (GORE[id] = { loc: base.loc, pos: cam, look: close ? [P.x, lay ? .22 : wh - .05, P.z] : [P.x, lay ? .3 : 1.32, P.z], fov: close ? 38 : lay ? 52 : 46, gore: kind,
     set: (o, t) => goreSet(o, t, kind, P, dir), post: (o, t, used) => gorePost(o, t, kind, P, dir, used) });
 }
 const stg = (t, a, b) => clamp((t - a) / (b - a), 0, 1), V3 = a => new T.Vector3(a[0], a[1], a[2]);
@@ -1618,7 +1665,10 @@ function gorePost(o, t, kind, P, dir, used) {
       : [[W0, h, .3, .02], [W0, h.clone().lerp(W0, .35).addScaledVector(B.lr, .12), .22, .018], ...(t > 2.3 ? [[h, mo, .08, .017]] : []), [W0, W0.clone().addScaledVector(B.lr, .3).setY(.05), .02, .022]]) : [], t);   // две петли провисают из живота к когтям
     sprayAt(f, W0, B.up, t, [.5, .9, 1.25, 2.0]); }
   else if (base === 'limb') { const W = n => C.bone[n].getWorldPosition(new T.Vector3()), th = W('thigh_l').lerp(W('calf_l'), .5), mo = mouthPt(M);   // бедро разорвано, голень вывернута назад
-    wound(C, 'thigh', rip); const cb = C.bone.calf_l; if (cb) { cb.rotateX(1.5 * stg(t, .8, 1.2)); cb.updateWorldMatrix(false, true); }
+    wound(C, 'thigh', rip); const cb = C.bone.calf_l;
+    if (cb) { const d = W('foot_l').sub(W('calf_l')), sd = Math.sign(new T.Vector3(0, 1, 0).cross(d).dot(B.lr)) || 1;   // голень вывернута вбок по полу (вывернутая назад уходила под пол на полметра)
+      cb.updateWorldMatrix(true, false); const wq = cb.getWorldQuaternion(new T.Quaternion()).premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), 1.35 * sd * stg(t, .8, 1.2)));
+      cb.parent.updateWorldMatrix(true, false); cb.quaternion.copy(cb.parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(wq)); cb.updateWorldMatrix(false, true); }
     gutsDraw(o, t > 1.0 ? [[th, mo, .04, .012], [th, th.clone().addScaledVector(B.lr, .25).setY(.04), .0, .014]] : [], t); sprayAt(f, th, B.up, t, [.55, 1.0, 1.8]); }
   else if (base === 'drag') { wound(C, 'belly', .9); const st = new T.Vector3(P.x + dir.x * .7, 0, P.z + dir.z * .7), ln = Math.max(.05, st.distanceTo(new T.Vector3(B.belly.x, 0, B.belly.z)));
     f.trail.visible = true; f.trail.position.set((st.x + B.belly.x) / 2, .005, (st.z + B.belly.z) / 2); f.trail.rotation.set(-PI / 2, 0, Math.atan2(dir.x, dir.z)); f.trail.scale.set(.32, ln, 1);
@@ -1946,7 +1996,7 @@ for (const id of ['01', '02', '03', '04', '07', '10', 'm2']) { const sh = SH[id 
   sh.set = (o, t, sh2) => { const acts = f(o, t, sh2) || [], fig = stareFig(SHS(), id, sh.pos); return fig ? acts.concat([fig]) : acts; }; }
 // ---- «Ты засмотрелся» (over_stare): не бросок в камеру, а «тсс». Монитор сам переключается на камеру будки (CAM 00): Жилец стоит за спиной Итана, ладони у него на плечах;
 // потом спереди (с места мониторов): он наклоняется к самому уху и, глядя в объектив, подносит длинный палец к губам — «тссс», — и гаснет свет
-const HUSH_E = [5.2, -.55], HUSH_M = [5.2, -1.33];   // Итан придвинулся к мониторам (стул на 22 см ближе обычного) — между спинкой и перегородкой встаёт Жилец
+const HUSH_E = [5.2, -.55], HUSH_M = [5.66, -.98], HUSH_MRY = -.5;   // Итан придвинулся к мониторам (стул на 22 см ближе обычного); Жилец — за его левым плечом, сбоку от спинки (между спинкой и перегородкой 39 см — он стоял в стуле и в перегородке)
 const HUSH_SH = { l: [5.37, 1.13, -.92], r: [5.04, 1.13, -.94] }, HUSH_LIPS = [5.3, 1.378, -.612], HUSH_UP = [.18, .91, .36], HUSH_IN = [.67, .16, -.73];   // кончик пальца — чуть выше губ Жильца, палец вдоль его лица (оси головы замерены)   // верх плеч Итана, губы Жильца в наклоне, ухо Итана (замерено по костям)
 function hushSet(o) { o.chair.position.z = HUSH_E[1] - .25; o.lamp.intensity = .8; o.lampBulb.visible = true; o.boothLight.intensity = .25; o.l1.intensity = .4; o.l3.intensity = .25; o.l4.intensity = .25; o.amb.intensity = .16; o.flickOn = false;
   o.faceL.position.set(4.85, 1.25, -.15); o.faceL.color.setHex(0xa8c0dc); o.faceL.distance = 2.6; o.faceL.intensity = 1.1; }   // холодный свет мониторов в лицо
@@ -1960,13 +2010,13 @@ function hushMon(lean, k) {   // lean — насколько наклонилс�
     fing: { r: ['flat', .55], l: k > .3 ? ['point', 1] : ['flat', .55] } };   // длинные пальцы лежат на плече
 }
 SH.hush_cam = { loc: 'lobby', pos: [6.42, 2.32, .32], look: [5.18, 1.3, -1.02], fov: 66, cctv: 1, face: { temych: 'terror' }, set: (o) => { hushSet(o);   // «CAM 00 — будка»: камера над дверью будки, о которой Итан не знал
-  return [['temych', HUSH_E[0], 0, HUSH_E[1], 0, hushEthan(), null], ['monster', HUSH_M[0], 0, HUSH_M[1], 0, hushMon(.15, 0), 'cam']]; } };   // глядит прямо в камеру: знает, что ты смотришь
+  return [['temych', HUSH_E[0], 0, HUSH_E[1], 0, hushEthan(), null], ['monster', HUSH_M[0], 0, HUSH_M[1], HUSH_MRY, hushMon(.15, 0), 'cam']]; } };   // глядит прямо в камеру: знает, что ты смотришь
 // взгляд посередине между лицом Итана и пальцем у губ Жильца: в вертикальном кадре видны оба
 SH.hush_face = { loc: 'lobby', pos: [4.66, 1.31, .04], look: [5.265, 1.35, -.69], fov: 34, set: (o, t) => { hushSet(o);
   A.temych.faceSets.k_frozen = { press: 1, wide: 1.3, browUp: 1, browIn: 1, frown: .65, tense: .7 }; A.temych.faceSet = 'k_frozen';   // застыл, не дышит: глаза распахнуты до предела (было: спокойное лицо)
   o.lamp.intensity = .12; o.boothLight.intensity = .04; o.l1.intensity = .1; o.l3.intensity = o.l4.intensity = .05; o.amb.intensity = .05; o.faceL.distance = 1.6; o.faceL.position.set(4.85, 1.0, -.2);   // свет мониторов снизу   // спереди светят только мониторы: лица и палец видно, тело за спиной уходит в тень (было ровно освещено целиком)
   if (t > 2.25) { o.lamp.intensity = o.boothLight.intensity = o.l1.intensity = o.l3.intensity = o.l4.intensity = o.faceL.intensity = 0; o.amb.intensity = .015; o.lampBulb.visible = false; o.hemi.intensity = 0; }   // после «тссс» гаснет свет
-  return [['temych', HUSH_E[0], 0, HUSH_E[1], 0, Object.assign(hushEthan(), { still: 1, look: [4.45, 1.02, .12] }), null], ['monster', HUSH_M[0], 0, HUSH_M[1], 0, hushMon(.4 + .6 * seg(t, 0, .7), seg(t, .35, .95)), 'cam']]; } };   // Итан не в объектив, а мимо — остекленело в экран, где видит его за спиной   // лицо у уха и палец у губ — почти с первого кадра (было: обе ладони на плечах, «семейное фото»)
+  return [['temych', HUSH_E[0], 0, HUSH_E[1], 0, Object.assign(hushEthan(), { still: 1, look: [4.45, 1.02, .12] }), null], ['monster', HUSH_M[0], 0, HUSH_M[1], HUSH_MRY, hushMon(.4 + .6 * seg(t, 0, .7), seg(t, .35, .95)), 'cam']]; } };   // Итан не в объектив, а мимо — остекленело в экран, где видит его за спиной   // лицо у уха и палец у губ — почти с первого кадра (было: обе ладони на плечах, «семейное фото»)
 // ================= смерти: у каждой свой финал =================
 // владелец 24 окт: «монстр только «тссс», разнообразия нет», «в игре пишет 14 смертей» — раньше 7 из 14 кончались одним и тем же броском в будке
 const _UPV = new T.Vector3(0, 1, 0), _tq = new T.Quaternion(), _tq2 = new T.Quaternion(), _tv = new T.Vector3();
@@ -2054,16 +2104,16 @@ SH.door_tilt = { loc: 'lobby', pos: DT_E.slice(), look: [4.3, 1.45, 1.75], fov: 
 // в свете экрана телефона, вплотную, лицо. Держит взгляд; голова чуть ложится набок. Экран гаснет — темнота.
 // (было: в конце лицо срезано краем кадра снизу слева и сразу гасло — не успевало прочитаться)
 const FM_EYE = [5.2, 1.21, -.8];   // глаза Итана: стул придвинут к пульту, как в «тсс» (HUSH_E) — за спинкой как раз встаёт Жилец
-const FM_FACE = [5.2, 1.2, -1.36];   // куда упирается взгляд в конце: чуть ниже его лица — лицо в верхней половине кадра
+const FM_FACE = [5.37, 1.7, -.71];   // куда упирается взгляд в конце: чуть ниже его лица — лицо в верхней половине кадра
 SH.fmom_turn = { loc: 'lobby', pos: FM_EYE.slice(), look: [5.15, 1.15, .5], fov: 50, set: (o, t, sh) => {
   o.chair.position.z = HUSH_E[1] - .25; o.lamp.intensity = o.boothLight.intensity = 0; o.lampBulb.visible = false; o.l1.intensity = .35; o.l3.intensity = .2; o.l4.intensity = .2; o.amb.intensity = .07; o.flickOn = false; o.fphone.visible = true;
-  const k = ease(clamp((t - .5) / 1.5, 0, 1)), a = PI * k, d = [-Math.sin(a) * .9, -.03 + .1 * k, Math.cos(a)];   // поворот головы назад через правое плечо
+  const k = ease(clamp((t - .5) / 1.5, 0, 1)), a = PI * .72 * k, d = [Math.sin(a) * .9, -.03 + .1 * k, Math.cos(a)];   // поворот головы через левое плечо — он стоит за левым, нагнулся над ним (за спинкой стула ему места нет: перегородка)
   const f = seg(t, 1.55, 2.0), L = lin([FM_EYE[0] + d[0], FM_EYE[1] + d[1], FM_EYE[2] + d[2]], FM_FACE, f);   // в конце поворота взгляд упирается в его лицо
   sh.look[0] = L[0]; sh.look[1] = L[1]; sh.look[2] = L[2];
   o.faceL.position.set(5.22, 1.14, -.9); o.faceL.color.setHex(0xc6d6ff); o.faceL.distance = 1.2; o.faceL.intensity = t > 2.92 ? 0 : .9;   // свет экрана телефона у лица — гаснет
   if (t > 2.92) lobbyBlack(o);
   A.monster.faceSets.k_fm = { dead: 1, smile: 1.3 * seg(t, 2.05, 2.85) }; A.monster.faceSet = 'k_fm';   // держит взгляд — и медленно растёт мёртвая улыбка (было: спокойное лицо до конца)
-  return [['monster', HUSH_M[0], 0, HUSH_M[1] - .09, 0, { clips: [['Crouch_Idle_Loop', 1.0, 1]], legs: 'plant', spine: { to: [5.2, 1.45, -.8], k: .3 }, post: C => headTwist(C, 0, .35 * seg(t, 2.3, 2.8)) }, FM_EYE]];
+  return [['monster', HUSH_M[0], 0, HUSH_M[1], HUSH_MRY, { clips: [['Idle_Loop', 1.7, 1]], legs: 'plant', pelvis: [.03, -.18, .05], spine: { to: [5.3, 1.25, -.66], k: .55 }, post: C => headTwist(C, 0, .35 * seg(t, 2.3, 2.8)) }, FM_EYE]];
 } };
 // 9. «Ты ответил»: её голос — не из трубки, из холла. Тёмное правое стекло будки, за ним никого — тишина — и удар: ладонь и лицо у стекла, в метре от него.
 // Улыбка шире человеческой, глаза чёрные, дышит на стекло. Ладонь медленно сползает, оставляя мазок, — лицо не двигается. Лампа гаснет.
@@ -2237,7 +2287,7 @@ SH.hush_hide = { loc: 'lobby', pos: [6.42, 2.32, .32], look: [5.65, .95, -.7], f
   o.lamp.intensity = 0; o.lampBulb.visible = false; o.boothLight.intensity = .2; o.l1.intensity = .3; o.amb.intensity = .14; o.flickOn = false;
   o.faceL.position.set(6.0, 1.9, -.2); o.faceL.color.setHex(0xc0ccd8); o.faceL.distance = 2.2; o.faceL.intensity = 1.0;   // лицо к объективу
   const lean = seg(t, .35, 1.2), sh = seg(t, 1.2, 1.75), lips = C => { const h = C.bone.Head.getWorldPosition(_tv); return lin([5.98, .83, -.47], [h.x + .07, h.y - .07, h.z + .08], sh); };   // пальцы упёрты в стол — потом к губам, к объективу (от пояса читалось как «рука на бедре»)
-  return [['temych', CROUCH[0], 0, CROUCH[1], PI, eCrouch(t), null], ['monster', 5.75, 0, -1.05, 0, Object.assign(STILL('Idle_Loop', 1.7), { pelvis: [0, -.18 * lean, 0], spine: { to: [5.75, .7, -.2], k: .5 * lean },
+  return [['temych', CROUCH[0], 0, CROUCH[1], PI, eCrouch(t), null], ['monster', 5.8, 0, -.97, 0, Object.assign(STILL('Idle_Loop', 1.7), { pelvis: [0, -.18 * lean, 0], spine: { to: [5.8, .7, -.2], k: .5 * lean },
     arm: { r: { at: [5.62, .55, -.4], by: 'palm', fdir: [0, -.25, 1], pdir: [0, -1, 0], w: lean, pole: [5.3, .9, -1.1] }, l: { at: lips, by: 'tip', fdir: nrm(lin([0, -.6, 1], [0, 1, 0], sh)), pdir: nrm(lin([0, -1, -.3], [-.5, 0, .85], sh)), w: lean } },
     fing: { r: ['claw', .4], l: sh > .3 ? ['point', 1] : ['flat', .55] } }), 'cam']]; } };
 // ---- постановка v3: передача ключей (сменщик протягивает связку через окно будки, Итан берёт её в ладонь) ----
@@ -2794,7 +2844,7 @@ const SOL_SEG = [['pelvis', 'spine_01', 'core', 'thigh'], ['spine_01', 'spine_02
 function solidCols(o) {   // коллайдеры места: список один раз (сцена без актёров и предметов в руках), положение — каждый кадр (solidNow)
   if (o._sol) return o._sol;
   const out = [], roots = new Set(Object.values(A).map(C => C.root));
-  const add = (m, kind, lc, lh, x) => out.push(Object.assign({ m, kind, lc, lh, c: new T.Vector3(), c0: null, u: [new T.Vector3(), new T.Vector3(), new T.Vector3()], e: [0, 0, 0], dP: new T.Vector3(1, 0, 0), br: 0, on: false, small: false, thin: false, ax: 0, sg: 1, sup: false }, x));
+  const add = (m, kind, lc, lh, x) => out.push(Object.assign({ m, kind, lc, lh, c: new T.Vector3(), c0: null, u: [new T.Vector3(), new T.Vector3(), new T.Vector3()], e: [0, 0, 0], dP: new T.Vector3(1, 0, 0), br: 0, on: false, small: false, thin: false, ax: 0, sg: 1, sup: false, pq: -1, pa: [0, 0] }, x));
   (function walk(n) {
     if (roots.has(n) || n.userData.solid === false || n.isLight) return;
     const sd = n.userData.solid;
@@ -2804,7 +2854,7 @@ function solidCols(o) {   // коллайдеры места: список од�
       const back = mt.some(x => x && x.side === T.BackSide), clear = mt.every(x => x && x.transparent && !x.depthWrite);   // комната, видимая изнутри (за дверью 707), — не предмет
       if (ty === 'BoxGeometry' && !back && !clear) add(n, 'box', new T.Vector3(), [P.width / 2, P.height / 2, P.depth / 2], {});
       else if (ty === 'CylinderGeometry' && !back && !clear) add(n, 'cyl', new T.Vector3(), [Math.max(P.radiusTop, P.radiusBottom), P.height / 2, 0], {});
-      else if (ty === 'PlaneGeometry' && !back) {   // стена — плита за лицом; стекло (прозрачное), двустороннее и мелкое — тонкая пластина
+      else if (ty === 'PlaneGeometry' && !back && !mt.every(x => x && x.polygonOffset)) {   // стена — плита за лицом; стекло (прозрачное), двустороннее и мелкое — тонкая пластина; наклейка (polygonOffset: табличка, тень, плакат) лежит на чужой поверхности — не коллайдер
         const two = clear || mt.some(x => x && x.side === T.DoubleSide), wall = !two && P.width >= 1 && P.height >= 1.2, D = wall ? .3 : .02;
         add(n, 'box', new T.Vector3(0, 0, two ? 0 : -D / 2), [P.width / 2, P.height / 2, D / 2], { plane: true, wall, glass: clear });
       }
@@ -2825,15 +2875,16 @@ function solidNow(K, full) {   // где коллайдер сейчас: цен
   const mx = 2 * Math.max(K.e[0], K.e[1], K.e[2]); if (mx < .15) return;   // мелочь (кружка, ключи, кнопка) тело не держит
   K.small = mx < .4; K.thin = K.kind === 'cyl' && K.e[0] < .1; K.br = Math.hypot(K.e[0], K.e[1], K.e[2]); K.on = true;
 }
-const _sq = new T.Vector3(), _sh = [0, 0];
+const _sq = new T.Vector3(), _sh = [0, 0], _cq = new T.Vector3();
 function solidSide(K, P) {   // с какой стороны предмета таз персонажа — туда и выталкиваем; ось почти отвесна — это опора (сиденье, стол, ступень)
   _sq.subVectors(P, K.c);
   if (K.kind === 'cyl') { const a = K.u[1], h = _sq.dot(a), rx = _sq.x - a.x * h, ry = _sq.y - a.y * h, rz = _sq.z - a.z * h, rl = Math.hypot(rx, ry, rz);
     if (rl <= K.e[0] && Math.abs(h) > K.e[1]) { K.ax = 1; K.sg = Math.sign(h) || 1; K.sup = Math.abs(a.y) > .6; return; }   // над торцом (сидит на табурете) или под ним
     K.ax = -1; K.sup = false; if (rl > 1e-4) K.dP.set(rx / rl, ry / rl, rz / rl); return; }
-  let bi = 0, bo = -1e9, mi = 0, mn = 1e9, inside = true;
-  for (let i = 0; i < 3; i++) { const o = Math.abs(_sq.dot(K.u[i])) - K.e[i]; if (o > bo) { bo = o; bi = i; } if (o > 0) inside = false; if (-o < mn) { mn = -o; mi = i; } }
-  const i = inside ? mi : bi; K.ax = i; K.sg = Math.sign(_sq.dot(K.u[i])) || 1; K.sup = Math.abs(K.u[i].y) > .6;
+  let bi = 0, bo = -1e9, mi = 0, mn = 1e9, inside = true, ti = -1;
+  for (let i = 0; i < 3; i++) { const o = Math.abs(_sq.dot(K.u[i])) - K.e[i]; if (o > bo) { bo = o; bi = i; } if (o > 0) inside = false; if (-o < mn) { mn = -o; mi = i; } if (K.e[i] <= .03 && (ti < 0 || K.e[i] < K.e[ti])) ti = i; }
+  const i = ti >= 0 ? ti : inside ? mi : bi; K.ax = i; K.sg = Math.sign(_sq.dot(K.u[i])) || 1; K.sup = Math.abs(K.u[i].y) > .6;   // тонкая пластина (столешница, стекло, дверь) — только по толщине: локти на столе — опора, а не «сквозь стол вдоль»
+  K.pq = Math.abs(_sq.dot(K.u[i])); K.pa[0] = _sq.dot(K.u[(i + 1) % 3]); K.pa[1] = _sq.dot(K.u[(i + 2) % 3]);   // где таз относительно пластины: для проверки «насквозь или мимо края» (solidPen)
 }
 function solidPen(K, p, r, depth) {   // насколько шар (r = 0 — точка) вошёл в предмет со стороны таза; _sh — куда выталкивать по полу. depth — просто глубина (детектор, и для опор)
   _sq.subVectors(p, K.c);
@@ -2850,8 +2901,21 @@ function solidPen(K, p, r, depth) {   // насколько шар (r = 0 — т
   }
   const i = K.ax, u = K.u[i];
   for (let j = 0; j < 3; j++) if (j !== i && Math.abs(_sq.dot(K.u[j])) > K.e[j] + r * .7) return 0;
-  const q = _sq.dot(u) * K.sg; if (q < -K.e[i] - r && K.e[i] > .03) return 0;   // за дальней гранью толстого предмета — обнял колонну, а не прошёл сквозь
-  const pen = K.e[i] + r - q; if (pen <= 0) return 0; if (depth) return pen;
+  let side = false; if (!depth) for (let j = 0; j < 3; j++) if (j !== i && Math.abs(_sq.dot(K.u[j])) > K.e[j]) side = true;
+  if (side && Math.abs(_sq.dot(u)) <= K.e[i] + r) {   // центр шара у боковой грани или ребра (рука скользит по крышке, бедро у края спинки): выталкиваем от ближайшей точки предмета, а не со стороны таза
+    _cq.copy(K.c); for (let j = 0; j < 3; j++) _cq.addScaledVector(K.u[j], clamp(_sq.dot(K.u[j]), -K.e[j], K.e[j]));
+    _cq.subVectors(p, _cq); const dl = _cq.length(), pn = r - dl; if (pn <= 0 || dl < 1e-5) return 0;
+    const hl = Math.hypot(_cq.x, _cq.z) / dl; if (hl < .8) return 0;   // сверху на крышке — опора
+    _sh[0] = _cq.x / (hl * dl); _sh[1] = _cq.z / (hl * dl); return pn / hl;
+  }
+  const q = _sq.dot(u) * K.sg; if (q < -K.e[i] - r && (K.e[i] > .03 || K.sup)) return 0;   // за дальней гранью толстого предмета — обнял колонну, а не прошёл сквозь; над столешницей, когда таз под ней (сидит за столом), — тоже не сквозь
+  let pen = K.e[i] + r - q, edge = false;
+  if (q < 0 && K.sup) pen = K.e[i] + r + q;   // опора, а таз с другой стороны (сидит за столом, пальцы на столешнице): глубина от той грани, на которой лежит рука
+  else if (q < 0 && K.e[i] <= .03 && K.pq >= 0) {   // за тонкой пластиной: насквозь, только если прямая от таза идёт через саму пластину; мимо края (стоит сбоку от спинки стула, нога за ней) — лишь касание с той стороны
+    const t = K.pq / Math.max(1e-6, K.pq - q), j = (i + 1) % 3, l = (i + 2) % 3;
+    if (Math.abs(K.pa[0] + (_sq.dot(K.u[j]) - K.pa[0]) * t) > K.e[j] + r || Math.abs(K.pa[1] + (_sq.dot(K.u[l]) - K.pa[1]) * t) > K.e[l] + r) { pen = K.e[i] + r + q; edge = true; }
+  }
+  if (pen <= 0) return 0; if (depth) return pen; if (edge) return 0;
   const hx = u.x * K.sg, hz = u.z * K.sg, hl = Math.hypot(hx, hz); if (hl < .8) return 0;
   _sh[0] = hx / hl; _sh[1] = hz / hl; return pen / hl;
 }
@@ -2883,7 +2947,7 @@ function solidFit(C) {   // шары тела по самой модели: дл
   const DEF = { core: .11, arm: .045, hand: .025, leg: .06, foot: .04 };
   C.solF = { seg: seg.map((S, k) => { if (!fr[k]) return null; const g = SOL_SEG[k][2];
     if (fr[k].L) { const rd = q(S.de, .8) || DEF.core * ss, rl = q(S.la, .9) || rd; return { r: Math.min(.3 * ss, rd * .92), wo: Math.max(0, rl - rd) }; }
-    return { r: Math.min(.2 * ss, (q(S.d, .7) || DEF[g] * ss) * .92), wo: 0 }; }) };
+    return { r: Math.min(.2 * ss, (q(S.d, g === 'leg' ? .5 : .7) || DEF[g] * ss) * .92), wo: 0 }; }) };
   if (head.length && hinv) { const c = new T.Vector3(); for (const p of head) c.add(p); c.multiplyScalar(1 / head.length); C.solF.hr = Math.min(.2 * ss, q(head.map(p => p.distanceTo(c)), .75) * .92); C.solF.hc = c.applyMatrix4(hinv); }
   C.solS = []; for (let i = 0; i < 200; i++) C.solS.push({ p: new T.Vector3(), r: 0, g: 'core' });
 }
@@ -2903,7 +2967,14 @@ function solidBody(C) {   // шары тела в мире по текущей �
   C.solN = n; return S;
 }
 const _pel = new T.Vector3(), _sp = new T.Vector3(), SOL_Z = [0, 0];
-const SOLID_ON = false;   // твёрдый мир включается всем после прогона всех сцен детектором (до того — window.__SOLID = 1 для проверки, 0 — сравнить без него)
+const SOLID_ON = true, SOL_MAX = .15;   // твёрдый мир: мелкие касания (до 15 см) поправляются сами; window.__SOLID = 0 — сравнить без него
+const _sw = [0, 0];
+function solidWorst(near, S, nS, dx, dz) {   // самое глубокое проникновение шаров тела (сдвинутых на dx, dz) и шаг наружу из него (_sw)
+  let best = .001; _sw[0] = _sw[1] = 0;
+  for (const K of near) for (let i = 0; i < nS; i++) { const s = S[i]; if (K.small && (s.g === 'hand' || s.g === 'arm')) continue;   // мелкий предмет рука может держать и трогать
+    _sp.set(s.p.x + dx, s.p.y, s.p.z + dz); const pen = solidPen(K, _sp, s.r) - SOL_TOL[s.g]; if (pen > best) { best = pen; _sw[0] = _sh[0] * pen; _sw[1] = _sh[1] * pen; } }
+  return best;
+}
 function solidPass(loc, used, sh, T0, id) {   // после поз: каждого, кто вошёл в стену или предмет, — на шаг в сторону, и поза заново
   if (!(window.__SOLID ?? SOLID_ON) || !used.size) return;
   const cols = solidCols(loc), gh = sh.ghost; let any = false;
@@ -2915,15 +2986,14 @@ function solidPass(loc, used, sh, T0, id) {   // после поз: каждог
     const S = solidBody(C), nS = C.solN; C.bone.pelvis.getWorldPosition(_pel); _pel.x -= d0[0]; _pel.z -= d0[1];
     for (let i = 0; i < nS; i++) { S[i].p.x -= d0[0]; S[i].p.z -= d0[1]; }   // считаем от места, где персонажа поставил кадр
     const near = []; for (const K of cols) if (K.on && K.c.distanceTo(_pel) < K.br + 1.3 * C.ss) { solidSide(K, _pel); if (!K.sup) near.push(K); }
-    let dx = 0, dz = 0;
-    for (let it = 0; it < 4 && near.length; it++) {   // самое глубокое проникновение — первым; угол двух стен — за два шага
-      let best = .001, bx = 0, bz = 0;
-      for (const K of near) for (let i = 0; i < nS; i++) { const s = S[i]; if (K.small && (s.g === 'hand' || s.g === 'arm')) continue;   // мелкий предмет рука может держать и трогать
-        _sp.set(s.p.x + dx, s.p.y, s.p.z + dz); const pen = solidPen(K, _sp, s.r) - SOL_TOL[s.g]; if (pen > best) { best = pen; bx = _sh[0] * pen; bz = _sh[1] * pen; } }
-      if (best <= .001) break; dx += bx; dz += bz;
+    let dx = 0, dz = 0; const w0 = near.length ? solidWorst(near, S, nS, 0, 0) : 0;
+    for (let it = 0, w = w0; it < 4 && w > .001; it++) {   // самое глубокое проникновение — первым; угол двух стен — за два шага
+      dx += _sw[0]; dz += _sw[1]; w = solidWorst(near, S, nS, dx, dz);
+      if (it === 3 || w <= .001) { if (w > w0 * .8) dx = dz = 0; break; }   // сдвиг не помог (из одного предмета — в другой): пусть стоит, как поставил кадр
     }
-    const L = Math.hypot(dx, dz); if (L > .9) { dx *= .9 / L; dz *= .9 / L; }
+    let L = Math.hypot(dx, dz);
     if (window.__SOLLOG && L > .02) window.__SOLLOG.push([id, k, +dx.toFixed(3), +dz.toFixed(3)]);   // для проверки: кого и насколько отодвинули
+    if (L > SOL_MAX) { dx = dz = L = 0; }   // глубже 15 см — это ошибка постановки (стоит в стуле, в перегородке): сдвиг сломал бы кадр, правится руками по отчёту детектора
     if (Math.hypot(dx - d0[0], dz - d0[1]) > .003) { C.root.position.x += dx - d0[0]; C.root.position.z += dz - d0[1]; C.solD = L > 1e-4 ? [dx, dz] : null; any = true; }
   }
   if (any) for (const k of used) A[k].update(T0, 0);   // поза на новом месте: касания руками и предметы в руках — заново
@@ -2956,7 +3026,18 @@ function clips(tol = .02) {
   }
   return out.sort((x, y) => y.d - x.d);
 }
+// для отладки: почему твёрдый мир двигает персонажа k — по каждому предмету самый глубокий шар тела (как в solidPass, от места, где его поставил кадр)
+function solidWhy(k) {
+  const C = A[k]; if (!C || !curLoc || !C.bone || !C.bone.pelvis) return [];
+  const cols = solidCols(curLoc), d0 = C.solD || SOL_Z, S = solidBody(C), out = []; for (const K of cols) solidNow(K);
+  C.bone.pelvis.getWorldPosition(_pel); _pel.x -= d0[0]; _pel.z -= d0[1];
+  for (const K of cols) { if (!K.on || K.c.distanceTo(_pel) >= K.br + 1.3 * C.ss) continue; solidSide(K, _pel); if (K.sup) continue;
+    let best = 0, bs = null; for (let i = 0; i < C.solN; i++) { const s = S[i]; if (K.small && (s.g === 'hand' || s.g === 'arm')) continue;
+      _sp.set(s.p.x - d0[0], s.p.y, s.p.z - d0[1]); const pen = solidPen(K, _sp, s.r) - SOL_TOL[s.g]; if (pen > best) { best = pen; bs = s; } }
+    if (bs) out.push({ prop: solidName(K), c: [K.c.x, K.c.y, K.c.z].map(x => +x.toFixed(2)), size: K.e.map(x => +(2 * x).toFixed(2)), pen: +best.toFixed(3), g: bs.g, r: +bs.r.toFixed(3), at: [bs.p.x - d0[0], bs.p.y, bs.p.z - d0[1]].map(x => +x.toFixed(2)), push: [+_sh[0].toFixed(2), +_sh[1].toFixed(2)] }); }
+  return out.sort((x, y) => y.pen - x.pen);
+}
 // для отладки: включённые коллайдеры места (что «твёрдое» в текущем кадре)
 function solids() { if (!curLoc) return []; return solidCols(curLoc).map(K => (solidNow(K), K)).filter(K => K.on).map(K => ({ prop: solidName(K), kind: K.kind, wall: !!K.wall, glass: !!K.glass, small: K.small, c: [+K.c.x.toFixed(2), +K.c.y.toFixed(2), +K.c.z.toFixed(2)], size: K.e.map(x => +(2 * x).toFixed(2)) })); }
-window.World = { draw, init, warm, setLand, project, projectAt, heads, clips, solids, names: NAME, perf: perfTick, get actors() { return A; }, get land() { return V.land; }, get cine() { return CINE; }, get ultra() { return ULTRA; }, thumb, shots: SH, alias: ALIAS, props: null, get ok() { return scenesReady; }, get tube() { return curLoc ? curLoc.tubeOK ?? 1 : 1; }, get ir() { return !!(curLoc && curLoc.ir); }, set vhs(v) { VHS = clamp(+v || 0, 0, 1); }, get vhs() { return VHS; } };
+window.World = { draw, init, warm, setLand, project, projectAt, heads, clips, solids, solidWhy, gfit: GFIT, names: NAME, perf: perfTick, get actors() { return A; }, get land() { return V.land; }, get cine() { return CINE; }, get ultra() { return ULTRA; }, thumb, shots: SH, alias: ALIAS, props: null, get ok() { return scenesReady; }, get tube() { return curLoc ? curLoc.tubeOK ?? 1 : 1; }, get ir() { return !!(curLoc && curLoc.ir); }, set vhs(v) { VHS = clamp(+v || 0, 0, 1); }, get vhs() { return VHS; } };
 })();
