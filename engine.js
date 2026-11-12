@@ -663,6 +663,17 @@ function tap() { if (userPause) return;   // на паузе тап по игр�
   if (scareAt != null && t < scareAt + 1) return;            // скример не пропускается
   for (const o of [...playing]) if (o.voice) { try { o.s.stop(); } catch {} playing.delete(o); }
   dropPending();
+  // разговор — по одной реплике (владелец, 11 ноя: «диалоги скипаются… надо поэтапно, а то каша»): нажатие посреди кадра с несколькими
+  // репликами обрывает только текущую и сразу начинает следующую, а не перематывает весь разговор в конец
+  const nx = sched.find(it => it.t > t + .12);
+  if (nx) {
+    for (const e of trig) if (!e.done && !e.carry && e.at > t && e.at < nx.t) e.done = true;
+    for (const m of [].concat(beat.sms || [])) { const at = m.at ?? .5; if (at > t && at < nx.t) showSms(m); }
+    bT0 = now() - nx.t;
+    for (const it of sched) if (it.t >= nx.t && BUF[it.k]) for (const vo of voiceFx(it.k)) { const o = play(it.k, Object.assign({ bus: 'voice' }, vo, { when: it.t - nx.t + (vo.dt || 0) })); if (o) o.voice = true; }
+    for (const [n, at, op] of beat.sfx || []) if (at >= nx.t && n !== 'knock' && n !== 'glass_tap' && !(n === 'static' && !burstOf(op))) play(n, Object.assign({ when: at - nx.t }, op));
+    lastSubKey = ''; return;
+  }
   for (const e of trig) if (!e.done && !e.carry && e.at > t) e.done = true;   // отложенные звуки кадра больше не нужны (смс покажем сразу)
   for (const m of [].concat(beat.sms || [])) if ((m.at ?? .5) > t) showSms(m);
   bT0 = now() - bDur;                                        // сразу к концу кадра (реплика показана целиком)
@@ -981,6 +992,7 @@ const MG = {
    Записать — что видно на текущей камере; пульт — свет этажей, вход, лифт. Пропустил три странности — оно приходит к будке. */
 const SEC_MIN = 7;   // секунд на игровую минуту (час ≈ 7 минут)
 const CAMS = { '01': 'ВХОД', '02': 'ХОЛЛ', '03': 'ЛИФТЫ', '04': 'ЛЕСТНИЦА', '07': 'ЭТАЖ 7', '10': 'ЭТАЖ 10', 'm2': 'ПОДВАЛ', '13': '' };
+const camShort = c => tr(CAMS[c] || '???').replace(/^\s*\d+\.?\s*|\s*\d+\s*$/, '');   // на кнопке номер уже стоит крупно: «07 / ЭТАЖ», а не «07 / ЭТАЖ 7» (владелец, 11 ноя)
 const camNo = c => c === 'm2' ? '−2' : c, camLabel = c => 'CAM ' + camNo(c) + (CAMS[c] ? '  ' + tr(CAMS[c]) : '');
 const KINDS = ['Свет', 'Дверь', 'Лифт', 'Помехи', 'Кто-то', 'Звук', 'Другое'];
 const toMin = s => { const [h, m] = s.split(':').map(Number); return (h < 12 ? h + 24 : h) * 60 + m; };
@@ -1127,7 +1139,7 @@ function shiftUI() {
   const cams = shf.seg.cams.concat(shk.c13 ? ['13'] : []);
   mgEl.innerHTML = `<div class="sh">
     <div class="sh-task hide" id="shTask"></div><div class="sh-toast" id="shToast"></div>
-    <div class="sh-cams">${cams.map(c => `<button data-c="${c}" class="${c === shf.cam ? 'on' : ''}${c === '13' ? ' c13' : ''}"><b>${camNo(c)}</b><small>${tr(CAMS[c] || '???')}</small></button>`).join('')}</div>
+    <div class="sh-cams">${cams.map(c => `<button data-c="${c}" class="${c === shf.cam ? 'on' : ''}${c === '13' ? ' c13' : ''}"><b>${camNo(c)}</b><small>${camShort(c)}</small></button>`).join('')}</div>
     <div class="sh-act"><button id="shLog">${ICON.pen || ''}<span>${tr('Записать')}</span></button><button id="shPanel"><span>${tr('Пульт')}</span></button><button id="shBook"><span>${tr('Журнал')}</span></button><button id="shHelp" class="sh-q" title="${tr('Как играть')}">?</button></div>
     <div class="tut-card hide" id="tutCard"><div class="tut-hd"><i class="tut-wave"><b></b><b></b><b></b><b></b><b></b></i>${tr('ПУЛЬТ «ЩИТ» · ДИСПЕТЧЕР ВЕРА')}</div><div class="tut-do" id="tutDo"></div><button id="tutGo" class="tut-go hide">${tr('Продолжить')}</button><button id="tutSkip">${tr('Пропустить обучение')}</button></div>
     <div class="tut-ring hide" id="tutRing"><i>▼</i></div>
@@ -1410,14 +1422,14 @@ function fitHd(host) {   // заголовок экрана настроек —
 const gpuName = () => { const g = window.__W3core && window.__W3core.GPU; return FINE && g && g.name ? '<br>GPU: ' + g.name.replace(/[<>&"]/g, '') : ''; };
 function settings(from = 'menu') {   // from: 'menu' — из главного меню, 'pause' — из паузы в игре (настройки поверх игры, без выхода)
   const resNow = () => +LS.get('res', 0) || 0, resList = () => [0, .5, .75, 1].concat(window.World && World.ultra ? [1.5, 2] : []);   // «Разрешение»: авто или доля; 150–200 % — суперсэмплинг «Ультра»
-  const gfxNow = () => { const W = window.World || {}; return W.ultra ? 'ultra' : W.cine ? 'cine' : 'retro'; };
+  const gfxNow = () => { const W = window.World || {}; return W.cine ? 'cine' : 'retro'; };
   const row = (id, name, val) => `<button class="set" id="${id}"><span>${tr(name)}</span><b>${tr(val)}</b></button>`;
   const vh = LS.get('vhs', vhsDef());
   const host = from === 'pause' ? pzEl : uiEl;
   host.innerHTML = `<div class="screen sub sets-scr"><div class="sets-hd"><h1>${tr('НАСТРОЙКИ')}</h1><button class="sx" id="sX" aria-label="${tr('Назад')}">${ICON.x}</button></div><div class="sets">
     ${row('sLang', 'Язык', (window.NS_LANG_NAMES || {})[LNG] || (EN ? 'ENGLISH' : 'РУССКИЙ'))}
     ${row('sLand', 'Экран', LAND ? 'ГОРИЗОНТАЛЬНО' : 'ВЕРТИКАЛЬНО')}
-    <button class="set" id="sGfx"><span>${tr('Графика')}</span><b class="gfx">${['retro', 'cine'].concat(FINE ? ['ultra'] : []).map(g => `<i data-g="${g}" class="${g === gfxNow() ? 'on' : ''}">${tr({ retro: 'РЕТРО', cine: 'КИНО', ultra: 'УЛЬТРА' }[g])}</i>`).join('')}</b></button>
+    <button class="set" id="sGfx"><span>${tr('Графика')}</span><b class="gfx">${['retro', 'cine'].map(g => `<i data-g="${g}" class="${g === gfxNow() ? 'on' : ''}">${tr({ retro: 'РЕТРО', cine: 'КИНО', ultra: 'УЛЬТРА' }[g])}</i>`).join('')}</b></button>
     ${row('sVoice', 'Озвучка', voiceOn() ? 'ВКЛ' : 'ВЫКЛ')}
     <div class="vols">${[['all', 'Громкость'], ['mus', 'Музыка'], ['voice', 'Голоса'], ['sfx', 'Звуки'], ['amb', 'Дождь и фон']].map(([k, n]) => `<div class="vol ${k}"><span>${tr(n)}</span><input type="range" min="0" max="100" step="5" value="${Math.round(VOL[k] * 100)}" data-k="${k}" aria-label="${tr(n)}"><b>${Math.round(VOL[k] * 100)}</b>${k === 'all' ? `<button class="mute${LS.get('mute', false) ? ' muted' : ''}" id="sMute" aria-label="${tr('Звук')}">${ICON.snd}</button>` : ''}</div>`).join('')}</div>
     ${window.World && World.cine ? `<button class="set wide" id="sRes"><span>${tr('Разрешение')}</span><b class="gfx">${resList().map(v => `<i data-r="${v}" class="${v === resNow() ? 'on' : ''}">${v ? Math.round(v * 100) + '%' : tr('АВТО')}</i>`).join('')}</b></button>` : ''}
@@ -1439,7 +1451,7 @@ function settings(from = 'menu') {   // from: 'menu' — из главного �
   $('sLand').onclick = () => { LS.set('land3', !LAND); applyLand(!LAND); re(); };
   if ($('sRes')) $('sRes').onclick = e => { const r = e && e.target && e.target.dataset ? e.target.dataset.r : null, L = resList(), cur = resNow(), nx = r != null ? +r : L[(L.indexOf(cur) + 1) % L.length]; if (nx === cur) return; LS.set('res', nx); reloadKeep(from); };
   $('sGfx').onclick = e => { const W = window.World || {}, pick = e && e.target && e.target.dataset ? e.target.dataset.g : null; if (pick && pick === gfxNow()) return;   // выбор виден сразу: тап по слову — этот вид; Enter/кнопка пульта — следующий по кругу
-    LS.set('gfx', pick || (W.ultra ? 'retro' : W.cine ? (FINE ? 'ultra' : 'retro') : 'cine')); LS.set('gfxAuto', 2); reloadKeep(from); };   // ПК: Кино → Ультра → Ретро; телефон: Кино ⇄ Ретро   // графика собирается при загрузке; выбрал сам — автопроверка больше не вмешивается
+    LS.set('gfx', pick || (W.cine ? 'retro' : 'cine')); LS.set('gfxAuto', 2); try { localStorage.removeItem('ns1_hq'); } catch (e) {} reloadKeep(from); };   // ПК: Кино → Ультра → Ретро; телефон: Кино ⇄ Ретро   // графика собирается при загрузке; выбрал сам — автопроверка больше не вмешивается
   $('sVhs').onclick = () => { const v = (LS.get('vhs', vhsDef()) + 2) % 3; LS.set('vhs', v); if (window.World) World.vhs = VHS_LV[v]; re(); };
   $('sCalm').onclick = () => { LS.set('calm', !calm()); re(); };
   $('sAuto').onclick = () => { auto = !auto; LS.set('auto', auto); $('bAuto').classList.toggle('on', auto); re(); };
@@ -1771,14 +1783,30 @@ function phoneIn(P, t) {   // экран телефона в координат�
   }
   g.textAlign = 'left';
 }
-// брызги крови на объектив: пятна с подтёками, всегда одни и те же для смерти (seed)
+// брызги крови на объектив: веер от одной точки (как от удара), а не ровные кружки с палочками (владелец, 11 ноя: «жести добавить»).
+// Крупные кляксы с неровным краем и лепестками, вытянутые капли по направлению разлёта, мелкая морось вокруг, подтёки разной ширины
+// с каплей на конце — текут с разной скоростью. Всегда одни и те же для смерти (seed).
 function splatBlood(g, W, H, k, seed) {
   const r = i => { const x = Math.sin(seed * 91.7 + i * 12.9898) * 43758.5453; return x - Math.floor(x); }, U = Math.min(W, H);
-  g.save(); g.globalAlpha = .85 * k;
-  for (let i = 0; i < 9; i++) { const x = r(i) * W, y = r(i + 20) * H * .8, rr = U * (.03 + r(i + 40) * .09);
-    const gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(70,0,0,.95)'); gr.addColorStop(.7, 'rgba(110,4,4,.8)'); gr.addColorStop(1, 'rgba(110,4,4,0)');
-    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill();
-    g.fillStyle = 'rgba(90,2,2,.85)'; const dl = rr * (1.5 + r(i + 60) * 3) * k; g.fillRect(x - rr * .08, y, rr * .16, dl); }
+  const ox = W * (.25 + r(1) * .5), oy = H * (.3 + r(2) * .35), spread = Math.min(1, k * 1.6);   // откуда брызнуло
+  const blob = (x, y, rr, a, i0) => { g.fillStyle = `rgba(${40 + 20 * r(i0)},${1 + 2 * r(i0 + 1)},2,${a})`; g.beginPath();
+    // край — плавная волна из трёх гармоник (у 14 прямых отрезков клякса читалась красным многоугольником)
+    const n = 44, p1 = r(i0) * 6.28, p2 = r(i0 + 1) * 6.28, p3 = r(i0 + 2) * 6.28, a2 = .1 + .12 * r(i0 + 3), a3 = .05 + .09 * r(i0 + 4), a5 = .03 + .05 * r(i0 + 5);
+    for (let q = 0; q <= n; q++) { const an = q / n * Math.PI * 2, rad = rr * (.86 + a2 * Math.sin(an * 2 + p1) + a3 * Math.sin(an * 3 + p2) + a5 * Math.sin(an * 5 + p3));
+      const px = x + Math.cos(an) * rad, py = y + Math.sin(an) * rad; q ? g.lineTo(px, py) : g.moveTo(px, py); } g.closePath(); g.fill(); };
+  g.save(); g.globalAlpha = Math.min(1, .92 * k * 1.3); g.lineCap = 'round';
+  for (let i = 0; i < 5; i++) {   // крупные кляксы: тёмная середина, светлее край, блик
+    const an = r(i + 10) * Math.PI * 2, d = U * (.08 + r(i + 20) * .5) * spread, x = ox + Math.cos(an) * d * 1.5, y = oy + Math.sin(an) * d * .8, rr = U * (.022 + r(i + 30) * .06);
+    blob(x, y, rr * 1.12, .55, i * 17 + 3); blob(x, y, rr * .86, .9, i * 17 + 40);
+    g.fillStyle = 'rgba(255,170,160,.10)'; g.beginPath(); g.ellipse(x - rr * .3, y - rr * .32, rr * .28, rr * .14, -.6, 0, 7); g.fill();
+    const dl = rr * (1.2 + r(i + 60) * 5.5) * Math.min(1, k * (.5 + r(i + 70))), w0 = rr * (.1 + r(i + 80) * .16), dx = (r(i + 90) - .5) * rr * .5;   // подтёк: сужается, чуть виляет, на конце капля
+    if (dl > rr * .4) { g.strokeStyle = 'rgba(96,3,4,.88)'; g.lineWidth = w0; g.beginPath(); g.moveTo(x + dx, y + rr * .5); g.quadraticCurveTo(x + dx * 1.6, y + rr * .5 + dl * .5, x + dx * 1.2, y + rr * .5 + dl); g.stroke();
+      g.fillStyle = 'rgba(84,2,3,.92)'; g.beginPath(); g.ellipse(x + dx * 1.2, y + rr * .5 + dl, w0 * .95, w0 * 1.35, 0, 0, 7); g.fill(); } }
+  for (let i = 0; i < 26; i++) {   // вытянутые капли разлёта и морось
+    const an = r(i + 200) * Math.PI * 2, d = U * (.12 + r(i + 230) * .85) * spread, x = ox + Math.cos(an) * d * 1.6, y = oy + Math.sin(an) * d * .9, big = i < 5;   // крупных вытянутых — немного (девять одинаковых овалов читались как конфетти)
+    const len = U * (big ? .008 + r(i + 260) * .02 : .002 + r(i + 260) * .005), wd = len * (big ? .24 : .8);
+    g.fillStyle = `rgba(${86 + 26 * r(i + 290)},3,4,${big ? .85 : .7})`; g.beginPath(); g.ellipse(x, y, len, wd, an, 0, 7); g.fill();
+    if (big) { g.beginPath(); g.ellipse(x + Math.cos(an) * len * 1.5, y + Math.sin(an) * len * 1.5, wd * .5, wd * .4, an, 0, 7); g.fill(); } }
   g.restore();
 }
 function wrapText(s, x0, y0, maxW, lh, maxL) { const cj = /^(zh|ja)$/.test(LNG), ws = cj ? [...s] : s.split(' '); let line = '', n = 0;   // китайский и японский без пробелов — перенос по знакам
@@ -1941,7 +1969,9 @@ function frame(tp) {
         if (beat.black != null && t >= beat.black) { const js = t - beat.black;
           if (sceneId.startsWith('over_') && js < JUMP_D) {   // скример смерти: лицо Жильца с открытой пастью бросается в объектив (зум), тряска, красный; потом чернота
             if (js < .05) { shakeAmp = Math.max(shakeAmp, 40); if (!jumpBuzz) { jumpBuzz = 1; buzz([200, 40, 300]); } }
-            shot('death_scream', { cx: .5, cy: .5, z: 1.05 + .65 * Math.min(1, js / .4), t: 2.2 + js, T, sx: 0, sy: 0, scare: 1 - js / JUMP_D });
+            // три разных скримера (по смерти — всегда один и тот же): в лоб, снизу-сбоку с головой набок, вплотную — глаза и пасть во весь кадр
+            const jv = ['death_scream', 'death_scream2', 'death_scream3'][(sceneId.length * 3 + sceneId.charCodeAt(sceneId.length - 1)) % 3];
+            shot(jv, { cx: .5, cy: .5, z: 1.05 + .65 * Math.min(1, js / .4), t: 2.2 + js, T, sx: 0, sy: 0, scare: 1 - js / JUMP_D });
             if (!calm()) { g.save(); g.globalCompositeOperation = 'multiply'; g.fillStyle = `rgb(255,${60 + 150 * js / JUMP_D | 0},40)`; g.fillRect(0, 0, W, H); g.restore();
               if (js < .05) { g.save(); g.globalCompositeOperation = 'difference'; g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.restore(); } }
             grain(.3);
