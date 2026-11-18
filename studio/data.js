@@ -128,7 +128,7 @@ const PROJECTS = [
   },
   {
     id: 'babelframe', cat: 'tools', featured: true, frame: true, accent: '#f0eee6',
-    name: 'BABELFRAME', version: '0.4.0', status: 'st_download',
+    name: 'BABELFRAME', version: '0.4.1', status: 'st_download',
     key: 'img/bf-ru-3.webp', shotsByLang: { ru: ['img/bf-ru-3.webp', 'img/bf-ru-1.webp', 'img/bf-ru-2.webp'], en: ['img/bf-en-3.webp', 'img/bf-en-1.webp', 'img/bf-en-2.webp'] },
     type: { ru: 'Программа для Windows', uk: 'Програма для Windows', en: 'Windows app' },
     hook: { ru: 'Любая игра — быстрее и на вашем языке.', uk: 'Будь-яка гра — швидша і вашою мовою.', en: 'Any game — faster, and in your language.' },
@@ -139,7 +139,7 @@ const PROJECTS = [
     features: { ru: ['Unity · Unreal · Godot и другие', 'Оверлей-перевод любой игры', 'Умный ИИ-перевод: род, мат, весь диалог', '«Вернуть как было»'], uk: ['Unity · Unreal · Godot та інші', 'Оверлей-переклад будь-якої гри', 'Розумний ШІ-переклад: рід, мат, весь діалог', '«Повернути як було»'], en: ['Unity · Unreal · Godot and more', 'Overlay translation for any game', 'Smart AI translation: gender, tone, context', 'One-click undo'] },
     platforms: { ru: 'Windows 10 / 11', uk: 'Windows 10 / 11', en: 'Windows 10 / 11' },
     how: { ru: 'Распакуйте архив и запустите BabelFrame.exe — установка не нужна. «Добавить игру» → выберите .exe → режим и язык → «Играть». Для оверлея игра должна быть в окне или «окне без рамки». Не используйте в онлайн-играх с античитом — программа сама отключит внутриигровые функции.', uk: 'Розпакуйте архів і запустіть BabelFrame.exe — встановлення не потрібне. «Додати гру» → виберіть .exe → режим і мову → «Грати». Для оверлея гра має бути у вікні або «вікні без рамки». Не використовуйте в онлайн-іграх з античитом — програма сама вимкне внутрішньоігрові функції.', en: 'Unzip and run BabelFrame.exe — no install needed. “Add game” → pick the .exe → mode and language → “Play”. For the overlay, run the game windowed or borderless. Don’t use it in online games with anti-cheat — the app turns in-game features off by itself.' },
-    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/BABELFRAME-0.4.0.zip', size: '0.4 MB', dl: true }],
+    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/BABELFRAME-0.4.1.zip', size: '0.4 MB', dl: true }],
   },
   {
     id: 'ub', cat: 'tools', accent: '#7be08f',
