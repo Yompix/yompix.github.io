@@ -1,31 +1,37 @@
 /* Сайт Yompix Games: пиксельный фон, заставка, витрина с пиксельной сменой слайдов, библиотека, страница проекта, поддержка. */
 (() => {
-  /* ---------- язык по стране (часовой пояс, без запросов в интернет) ----------
-     Украина — украинский и русский на выбор; Россия и русскоязычные страны — только русский; остальные — английский.
-     Проверка: ?region=ua|ru|en */
-  const UA_TZ = ['Europe/Kiev', 'Europe/Kyiv', 'Europe/Uzhgorod', 'Europe/Zaporozhye', 'Europe/Simferopol'];
-  const RU_TZ = ['Europe/Moscow', 'Europe/Kaliningrad', 'Europe/Samara', 'Europe/Volgograd', 'Europe/Saratov', 'Europe/Ulyanovsk', 'Europe/Astrakhan',
-    'Europe/Kirov', 'Europe/Minsk', 'Europe/Chisinau', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Barnaul', 'Asia/Tomsk',
-    'Asia/Novokuznetsk', 'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Chita', 'Asia/Yakutsk', 'Asia/Khandyga', 'Asia/Vladivostok', 'Asia/Ust-Nera',
-    'Asia/Magadan', 'Asia/Sakhalin', 'Asia/Srednekolymsk', 'Asia/Kamchatka', 'Asia/Anadyr', 'Asia/Almaty', 'Asia/Qostanay', 'Asia/Aqtobe',
-    'Asia/Aqtau', 'Asia/Atyrau', 'Asia/Oral', 'Asia/Qyzylorda', 'Asia/Bishkek', 'Asia/Dushanbe', 'Asia/Tashkent', 'Asia/Samarkand',
-    'Asia/Ashgabat', 'Asia/Yerevan', 'Asia/Baku'];
+  /* ---------- язык по стране (часовой пояс устройства, без запросов в интернет) ----------
+     Украина — украинский и русский; Россия — только русский; Казахстан и другие страны СНГ — свой язык и русский;
+     все остальные страны — английский. Проверка: ?region=ua|ru|kz|by|kg|uz|tj|tm|am|az|md|en */
+  const TZ = {
+    ua: ['Europe/Kiev', 'Europe/Kyiv', 'Europe/Uzhgorod', 'Europe/Zaporozhye', 'Europe/Simferopol'],
+    ru: ['Europe/Moscow', 'Europe/Kaliningrad', 'Europe/Samara', 'Europe/Volgograd', 'Europe/Saratov', 'Europe/Ulyanovsk', 'Europe/Astrakhan',
+      'Europe/Kirov', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Barnaul', 'Asia/Tomsk', 'Asia/Novokuznetsk', 'Asia/Krasnoyarsk',
+      'Asia/Irkutsk', 'Asia/Chita', 'Asia/Yakutsk', 'Asia/Khandyga', 'Asia/Vladivostok', 'Asia/Ust-Nera', 'Asia/Magadan', 'Asia/Sakhalin',
+      'Asia/Srednekolymsk', 'Asia/Kamchatka', 'Asia/Anadyr'],
+    kz: ['Asia/Almaty', 'Asia/Qostanay', 'Asia/Aqtobe', 'Asia/Aqtau', 'Asia/Atyrau', 'Asia/Oral', 'Asia/Qyzylorda'],
+    by: ['Europe/Minsk'], kg: ['Asia/Bishkek'], uz: ['Asia/Tashkent', 'Asia/Samarkand'], tj: ['Asia/Dushanbe'], tm: ['Asia/Ashgabat'],
+    am: ['Asia/Yerevan'], az: ['Asia/Baku'], md: ['Europe/Chisinau'],
+  };
+  /* язык страны → [код, подпись на переключателе]; второй язык везде русский */
+  const NATIVE = { ua: ['uk', 'UA'], kz: ['kk', 'KZ'], by: ['be', 'BY'], kg: ['ky', 'KG'], uz: ['uz', 'UZ'], tj: ['tg', 'TJ'], tm: ['tk', 'TM'], am: ['hy', 'AM'], az: ['az', 'AZ'], md: ['ro', 'MD'] };
+  const BY_LANG = { uk: 'ua', kk: 'kz', be: 'by', ky: 'kg', uz: 'uz', tg: 'tj', tk: 'tm', hy: 'am', az: 'az', ro: 'md', ru: 'ru' };
   function region() {
     const forced = new URLSearchParams(location.search).get('region');
-    if (forced) return forced;
+    if (forced && (TZ[forced] || forced === 'en')) return forced;
     let tz = '';
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* старый браузер */ }
-    if (UA_TZ.indexOf(tz) >= 0) return 'ua';
-    if (RU_TZ.indexOf(tz) >= 0) return 'ru';
+    for (const r in TZ) if (TZ[r].indexOf(tz) >= 0) return r;
     if (tz) return 'en';
-    const l = (navigator.language || 'en').slice(0, 2);
-    return l === 'uk' ? 'ua' : ['ru', 'be', 'kk', 'ky', 'tg', 'uz', 'hy', 'az'].indexOf(l) >= 0 ? 'ru' : 'en';
+    return BY_LANG[(navigator.language || 'en').slice(0, 2)] || 'en';   // часового пояса нет — по языку браузера
   }
   const REGION = region();
-  const LANGS = REGION === 'ua' ? [['uk', 'UA'], ['ru', 'RU']] : REGION === 'ru' ? [['ru', 'RU']] : [['en', 'EN']];
+  const LANGS = REGION === 'ru' ? [['ru', 'RU']] : NATIVE[REGION] ? [NATIVE[REGION], ['ru', 'RU']] : [['en', 'EN']];
   const saved = localStorage.getItem('yg_lang');
-  const navUk = (navigator.languages || [navigator.language || '']).some((x) => String(x).indexOf('uk') === 0);
-  let lang = LANGS.some((x) => x[0] === saved) ? saved : REGION === 'ua' ? (navUk ? 'uk' : 'ru') : LANGS[0][0];
+  // между своим языком и русским выбирает язык браузера; если браузер ни на одном из них — свой язык страны
+  const navLangs = (navigator.languages || [navigator.language || '']).map((x) => String(x).slice(0, 2));
+  const navPick = LANGS.filter((x) => navLangs.indexOf(x[0]) >= 0).map((x) => x[0])[0];
+  let lang = LANGS.some((x) => x[0] === saved) ? saved : navPick || LANGS[0][0];
 
   const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   let cat = 'all';
@@ -39,17 +45,23 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = (id) => PROJECTS.filter((p) => p.id === id)[0];
   const FEAT = PROJECTS.filter((p) => p.featured);
+  // английские названия (Hush Till Six, LANTERN…) — английские правила заглавных букв (иначе в азербайджанском i → İ)
+  const nl = (p) => (typeof p.name === 'string' ? ' lang="en"' : '');
   const pad2 = (n) => (n < 10 ? '0' : '') + n;
   const DL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
   const GO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M7 17 17 7m0 0H8m9 0v9"/></svg>';
 
   /* ---------- нарисованные обложки ---------- */
+  function novoName() {
+    const n = String(T(P('novograd').name)).split(':');
+    return [n[0].trim(), (n[1] || '').trim().toLowerCase()];
+  }
   function art(kind) {
     if (kind === 'novograd') {
       const h = [38, 62, 48, 80, 55, 92, 66, 44, 74, 58, 86, 50, 70, 40];
       return '<div class="art art-novograd"><div class="city">' + h.map((x) => '<i style="height:' + x + '%"></i>').join('') +
-        '</div><div class="water"></div><div class="rain"></div><div class="neon">' + (lang === 'en' ? 'Novograd' : 'Новоград') +
-        '<small>' + (lang === 'en' ? 'dark streets' : lang === 'uk' ? 'темні вулиці' : 'тёмные улицы') + '</small></div></div>';
+        '</div><div class="water"></div><div class="rain"></div><div class="neon">' + esc(novoName()[0]) +
+        '<small>' + esc(novoName()[1]) + '</small></div></div>';
     }
     if (kind === 'vpn') {
       return '<div class="art art-vpn"><div class="globe"></div><svg viewBox="0 0 100 120" fill="none"><path d="M50 4 92 20v34c0 30-19 51-42 62C27 105 8 84 8 54V20Z" fill="#111" stroke="#fff" stroke-width="3"/><path d="M33 60l12 12 24-26" stroke="#fff" stroke-width="7" stroke-linecap="square"/></svg></div>';
@@ -72,13 +84,13 @@
         '<div class="shot" data-open="' + p.id + '">' + media(p) + '<span class="rec">' + pad2(i + 1) + ' / ' + pad2(FEAT.length) + '</span></div>' +
         '<div class="slide-in">' +
           '<div class="tags"><span class="tag solid">' + esc(T(p.type)) + '</span>' + status(p) + (p.age ? '<span class="tag">' + p.age + '</span>' : '') + '</div>' +
-          '<h1>' + esc(T(p.name)) + '</h1>' +
+          '<h1' + nl(p) + '>' + esc(T(p.name)) + '</h1>' +
           '<p class="hook">' + esc(T(p.hook)) + '</p>' +
           '<div class="cta">' + btns({ links: (p.links || []).slice(0, 1) }) + '<button class="btn btn-o" data-open="' + p.id + '">' + t('more') + '</button></div>' +
         '</div></div>').join('');
     $('#thumbs').innerHTML = FEAT.map((p, i) =>
       '<button class="thumb' + (i === slide ? ' on' : '') + '" data-slide="' + i + '"><div class="tmini">' + (p.key ? '<img src="' + p.key + '" alt="">' : '<div class="art art-' + p.art + '"></div>') + '</div>' +
-      '<div><b>' + esc(T(p.name)) + '</b><span>' + esc(T(p.type)).split(' · ')[0] + '</span></div><i class="bar"></i></button>').join('');
+      '<div><b' + nl(p) + '>' + esc(T(p.name)) + '</b><span>' + esc(T(p.type)).split(' · ')[0] + '</span></div><i class="bar"></i></button>').join('');
     schedule();
   }
   function schedule() { clearTimeout(timer); timer = setTimeout(() => go(slide + 1), 7000); }
@@ -136,7 +148,7 @@
     $('#grid').innerHTML = PROJECTS.map((p) =>
       '<article class="tile reveal' + (cat !== 'all' && p.cat !== cat ? ' hide' : '') + '" data-open="' + p.id + '" tabindex="0">' +
         '<div class="tile-media">' + media(p, true) + '<div class="tags">' + status(p) + '</div></div>' +
-        '<div class="tile-body"><div class="tile-type">' + esc(T(p.type)) + '</div><h3>' + esc(T(p.name)) + '</h3><p>' + esc(T(p.hook)) + '</p>' +
+        '<div class="tile-body"><div class="tile-type">' + esc(T(p.type)) + '</div><h3' + nl(p) + '>' + esc(T(p.name)) + '</h3><p>' + esc(T(p.hook)) + '</p>' +
         '<div class="tile-foot"><span>' + t('version') + ' <b>' + p.version + '</b></span><span class="go">' + t('more') + ' →</span></div></div>' +
       '</article>').join('');
   }
@@ -151,7 +163,7 @@
       '<button class="sheet-x" data-close aria-label="' + t('close') + '">×</button>' +
       '<div class="sh-top"><div class="gal"><div class="gal-main" id="galmain">' + (shots ? '<img src="' + shots[0] + '" alt="">' : media(p)) + '</div>' +
       (shots && shots.length > 1 ? '<div class="gal-row">' + shots.map((s, i) => '<button class="' + (i ? '' : 'on') + '" data-shot="' + s + '"><img src="' + s + '" alt="" loading="lazy"></button>').join('') + '</div>' : '') +
-      '</div><div class="sh-info"><div class="type">' + esc(T(p.type)) + '</div><h2>' + esc(T(p.name)) + '</h2><p class="hook">' + esc(T(p.hook)) + '</p><p class="about">' + esc(T(p.about)) + '</p>' +
+      '</div><div class="sh-info"><div class="type">' + esc(T(p.type)) + '</div><h2' + nl(p) + '>' + esc(T(p.name)) + '</h2><p class="hook">' + esc(T(p.hook)) + '</p><p class="about">' + esc(T(p.about)) + '</p>' +
       '<div class="meta"><div><small>' + t('version') + '</small><b>' + p.version + '</b></div><div><small>' + t('platforms') + '</small><b>' + esc(T(p.platforms)) + '</b></div></div>' +
       '<div class="cta">' + btns(p) + '</div></div></div>' +
       '<div class="sh-bottom"><div><h4>' + t('features') + '</h4><ul class="feat">' + (T(p.features) || []).map((f) => '<li>' + esc(f) + '</li>').join('') + '</ul></div>' +

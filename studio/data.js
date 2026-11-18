@@ -112,21 +112,6 @@ const PROJECTS = [
     ],
   },
   {
-    id: 'od', cat: 'tg', featured: true, accent: '#9b6bff',
-    name: 'Office Dreams', version: '1.4.0', status: 'st_live',
-    key: 'img/od-key.webp', shots: ['img/od-2.webp', 'img/od-ph-office.webp', 'img/od-ph-team.webp', 'img/od-ph-tower.webp', 'img/od-ph-city.webp'],
-    type: { ru: 'Игра в Telegram · крипто-проект', uk: 'Гра в Telegram · крипто-проєкт', en: 'Telegram game · crypto project' },
-    hook: { ru: 'Неоновый тайкун игровой студии прямо в Telegram.', uk: 'Неоновий тайкун ігрової студії просто в Telegram.', en: 'A neon game-studio tycoon right inside Telegram.' },
-    about: {
-      ru: 'Нанимайте команду, выпускайте игры, открывайте этажи башни, выходите на IPO и сражайтесь в «Битве студий». За настоящий прогресс начисляются очки аирдропа токена OFFX в сети Solana.',
-      uk: 'Наймайте команду, випускайте ігри, відкривайте поверхи вежі, виходьте на IPO й змагайтеся в «Битві студій». За справжній прогрес нараховуються бали аірдропу токена OFFX у мережі Solana.',
-      en: 'Hire a team, ship games, unlock tower floors, go public and fight in Studio Battles. Real progress earns airdrop points for the OFFX token on Solana.' },
-    features: { ru: ['Команда и проекты', 'Этажи и IPO', 'Битва студий', 'Токен OFFX'], uk: ['Команда й проєкти', 'Поверхи та IPO', 'Битва студій', 'Токен OFFX'], en: ['Team and projects', 'Floors and IPO', 'Studio Battles', 'OFFX token'] },
-    platforms: { ru: 'Telegram', uk: 'Telegram', en: 'Telegram' },
-    how: { ru: 'Откройте бота и нажмите «Играть» — ничего устанавливать не нужно.', uk: 'Відкрийте бота й натисніть «Грати» — нічого встановлювати не треба.', en: 'Open the bot and tap “Play” — nothing to install.' },
-    links: [{ t: { ru: 'Играть в Telegram', uk: 'Грати в Telegram', en: 'Play on Telegram' }, url: 'https://t.me/officedream1_bot/play' }],
-  },
-  {
     id: 'vpn', cat: 'tg', accent: '#3fd1c0',
     name: 'YURK VPN', version: '0.1.0', status: 'st_live',
     art: 'vpn',
