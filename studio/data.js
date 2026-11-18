@@ -128,7 +128,7 @@ const PROJECTS = [
   },
   {
     id: 'babelframe', cat: 'tools', featured: true, frame: true, accent: '#f0eee6',
-    name: 'BABELFRAME', version: '0.2.0', status: 'st_download',
+    name: 'BABELFRAME', version: '0.3.0', status: 'st_download',
     key: 'img/bf-ru-3.webp', shotsByLang: { ru: ['img/bf-ru-3.webp', 'img/bf-ru-1.webp', 'img/bf-ru-2.webp'], en: ['img/bf-en-3.webp', 'img/bf-en-1.webp', 'img/bf-en-2.webp'] },
     type: { ru: 'Программа для Windows', uk: 'Програма для Windows', en: 'Windows app' },
     hook: { ru: 'Любая игра — быстрее и на вашем языке.', uk: 'Будь-яка гра — швидша і вашою мовою.', en: 'Any game — faster, and in your language.' },
@@ -136,10 +136,10 @@ const PROJECTS = [
       ru: 'Добавляете игру — программа сама узнаёт движок: Unity, Unreal, Godot, Ren’Py, RPG Maker и другие. Ускоряет игру настройками Windows и самого движка, а переводит двумя способами: прямо внутри Unity-игр или оверлеем поверх любой игры — читает текст с экрана и показывает перевод от DeepL или Google. Всё, что поменялось, возвращается одной кнопкой.',
       uk: 'Додаєте гру — програма сама впізнає рушій: Unity, Unreal, Godot, Ren’Py, RPG Maker та інші. Прискорює гру налаштуваннями Windows і самого рушія, а перекладає двома способами: просто всередині Unity-ігор або оверлеєм поверх будь-якої гри — читає текст з екрана й показує переклад від DeepL або Google. Усе, що змінилося, повертається однією кнопкою.',
       en: 'Add a game and it figures out the engine by itself: Unity, Unreal, Godot, Ren’Py, RPG Maker and more. It speeds the game up through Windows and engine settings, and translates in two ways: right inside Unity games, or as an overlay on top of any game — it reads the text on screen and shows a DeepL or Google translation. Everything it changed comes back with one button.' },
-    features: { ru: ['Unity · Unreal · Godot и другие', 'Оверлей-перевод любой игры', 'DeepL + Google, верный род героя', '«Вернуть как было»'], uk: ['Unity · Unreal · Godot та інші', 'Оверлей-переклад будь-якої гри', 'DeepL + Google, правильний рід героя', '«Повернути як було»'], en: ['Unity · Unreal · Godot and more', 'Overlay translation for any game', 'DeepL + Google, right speaker gender', 'One-click undo'] },
+    features: { ru: ['Unity · Unreal · Godot и другие', 'Оверлей-перевод любой игры', 'Умный ИИ-перевод: род, мат, весь диалог', '«Вернуть как было»'], uk: ['Unity · Unreal · Godot та інші', 'Оверлей-переклад будь-якої гри', 'Розумний ШІ-переклад: рід, мат, весь діалог', '«Повернути як було»'], en: ['Unity · Unreal · Godot and more', 'Overlay translation for any game', 'Smart AI translation: gender, tone, context', 'One-click undo'] },
     platforms: { ru: 'Windows 10 / 11', uk: 'Windows 10 / 11', en: 'Windows 10 / 11' },
     how: { ru: 'Распакуйте архив и запустите BabelFrame.exe — установка не нужна. «Добавить игру» → выберите .exe → режим и язык → «Играть». Для оверлея игра должна быть в окне или «окне без рамки». Не используйте в онлайн-играх с античитом — программа сама отключит внутриигровые функции.', uk: 'Розпакуйте архів і запустіть BabelFrame.exe — встановлення не потрібне. «Додати гру» → виберіть .exe → режим і мову → «Грати». Для оверлея гра має бути у вікні або «вікні без рамки». Не використовуйте в онлайн-іграх з античитом — програма сама вимкне внутрішньоігрові функції.', en: 'Unzip and run BabelFrame.exe — no install needed. “Add game” → pick the .exe → mode and language → “Play”. For the overlay, run the game windowed or borderless. Don’t use it in online games with anti-cheat — the app turns in-game features off by itself.' },
-    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/BABELFRAME-0.2.0.zip', size: '0.3 MB', dl: true }],
+    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/BABELFRAME-0.3.0.zip', size: '4.7 MB', dl: true }],
   },
   {
     id: 'ub', cat: 'tools', accent: '#7be08f',
