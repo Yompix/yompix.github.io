@@ -233,8 +233,8 @@ button { font: inherit; color: inherit; }
 .sh-bottom { display: grid; grid-template-columns: 1.45fr 1fr; border-top: 1px dashed var(--line2); }
 .sh-bottom > div { padding: 26px 34px 34px; }
 .sh-bottom h4 { margin: 0 0 14px; font: 600 22px/1 Pixel, Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
-.feat { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; list-style: none; margin: 0; padding: 0; }
-.feat li { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.feat { display: grid; grid-template-columns: 1fr; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.feat li { display: flex; align-items: flex-start; gap: 12px; font-weight: 500; line-height: 1.45; }
 .feat li::before { content: "+"; font: 700 29px/1 Pixel, Inter, sans-serif; color: #fff; }
 .sh-bottom p { margin: 0; color: #b0b0ac; }
 
