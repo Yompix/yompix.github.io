@@ -31,7 +31,8 @@
   let timer = null;
   let sponsors = null;
   const $ = (s, el = document) => el.querySelector(s);
-  const T = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? (o[lang] ?? o.en ?? '') : o ?? '');
+  const has = (v) => v !== undefined && v !== null;
+  const T = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? (has(o[lang]) ? o[lang] : has(o.en) ? o.en : '') : has(o) ? o : '');
   const t = (k) => T(UI[k]);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = (id) => PROJECTS.find((p) => p.id === id);
@@ -162,9 +163,10 @@
     $('#wall').innerHTML = `<div class="run">${once}${once}</div>`;
   }
   function loadSponsors() {
-    const ctl = new AbortController();
-    setTimeout(() => ctl.abort(), 8000);
-    fetch(SUPPORT.sponsorsApi, { signal: ctl.signal }).then((r) => r.json())
+    if (!window.fetch) return;
+    const ctl = window.AbortController ? new AbortController() : null;
+    if (ctl) setTimeout(() => ctl.abort(), 8000);
+    fetch(SUPPORT.sponsorsApi, ctl ? { signal: ctl.signal } : {}).then((r) => r.json())
       .then((j) => { if (j && j.ok) { sponsors = j; if (j.donate) SUPPORT.stars = j.donate; } })
       .catch(() => {}).finally(() => { renderSupport(); renderWall(); });
   }
