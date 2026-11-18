@@ -59,7 +59,7 @@
     }
     return '';
   }
-  const media = (p) => (p.key ? '<img src="' + p.key + '" alt="' + esc(T(p.name)) + '">' : art(p.art));
+  const media = (p, lazy) => (p.key ? '<img src="' + p.key + '" alt="' + esc(T(p.name)) + '" decoding="async"' + (lazy ? ' loading="lazy"' : '') + '>' : art(p.art));
   const status = (p) => '<span class="tag"><i class="blink"></i>' + esc(t(p.status)) + '</span>';
   const btns = (p) => (p.links || []).map((l, i) =>
     '<a class="btn ' + (i === 0 ? 'btn-w' : 'btn-o') + '" href="' + l.url + '"' + (l.url.indexOf('http') === 0 ? ' target="_blank" rel="noopener"' : '') +
@@ -135,7 +135,7 @@
     $('#chips').innerHTML = CATS.map((c) => '<button class="' + (c === cat ? 'on' : '') + '" data-cat="' + c + '">' + t('cat_' + c) + '</button>').join('');
     $('#grid').innerHTML = PROJECTS.map((p) =>
       '<article class="tile reveal' + (cat !== 'all' && p.cat !== cat ? ' hide' : '') + '" data-open="' + p.id + '" tabindex="0">' +
-        '<div class="tile-media">' + media(p) + '<div class="tags">' + status(p) + '</div></div>' +
+        '<div class="tile-media">' + media(p, true) + '<div class="tags">' + status(p) + '</div></div>' +
         '<div class="tile-body"><div class="tile-type">' + esc(T(p.type)) + '</div><h3>' + esc(T(p.name)) + '</h3><p>' + esc(T(p.hook)) + '</p>' +
         '<div class="tile-foot"><span>' + t('version') + ' <b>' + p.version + '</b></span><span class="go">' + t('more') + ' →</span></div></div>' +
       '</article>').join('');
@@ -150,7 +150,7 @@
     card.innerHTML =
       '<button class="sheet-x" data-close aria-label="' + t('close') + '">×</button>' +
       '<div class="sh-top"><div class="gal"><div class="gal-main" id="galmain">' + (shots ? '<img src="' + shots[0] + '" alt="">' : media(p)) + '</div>' +
-      (shots && shots.length > 1 ? '<div class="gal-row">' + shots.map((s, i) => '<button class="' + (i ? '' : 'on') + '" data-shot="' + s + '"><img src="' + s + '" alt=""></button>').join('') + '</div>' : '') +
+      (shots && shots.length > 1 ? '<div class="gal-row">' + shots.map((s, i) => '<button class="' + (i ? '' : 'on') + '" data-shot="' + s + '"><img src="' + s + '" alt="" loading="lazy"></button>').join('') + '</div>' : '') +
       '</div><div class="sh-info"><div class="type">' + esc(T(p.type)) + '</div><h2>' + esc(T(p.name)) + '</h2><p class="hook">' + esc(T(p.hook)) + '</p><p class="about">' + esc(T(p.about)) + '</p>' +
       '<div class="meta"><div><small>' + t('version') + '</small><b>' + p.version + '</b></div><div><small>' + t('platforms') + '</small><b>' + esc(T(p.platforms)) + '</b></div></div>' +
       '<div class="cta">' + btns(p) + '</div></div></div>' +
@@ -158,8 +158,15 @@
       '<div><h4>' + t('how') + '</h4><p>' + esc(T(p.how)) + '</p></div></div>';
     $('#sheet').hidden = false;
     document.body.classList.add('lock');
+    fitGal();
     card.scrollTop = 0;
     if (push !== false) history.replaceState(null, '', '#' + id);
+  }
+  function fitGal() {
+    const g = $('#galmain'), im = g && g.querySelector('img');
+    if (!im) { if (g) g.classList.remove('tall'); return; }
+    const set = () => g.classList.toggle('tall', im.naturalHeight > im.naturalWidth);
+    if (im.complete) set(); else im.onload = set;
   }
   function closeSheet() {
     $('#sheet').hidden = true;
@@ -272,7 +279,7 @@
     bg.base = base;
     bg.ctx.drawImage(base, 0, 0);          // фон рисуется один раз и больше не трогается при прокрутке
     bg.crosses = [];
-    for (let k = 0; k < (W < 700 ? 12 : 26); k++) bg.crosses.push({ x: Math.random() * W, y: Math.random() * H, s: 2 + Math.floor(Math.random() * 3), ph: Math.random() * 6, sp: 0.5 + Math.random() * 1.5 });
+    for (let k = 0; k < (W < 700 ? 8 : 26); k++) bg.crosses.push({ x: Math.random() * W, y: Math.random() * H, s: 2 + Math.floor(Math.random() * 3), ph: Math.random() * 6, sp: 0.5 + Math.random() * 1.5 });
   }
   function drawBg(ts) {
     requestAnimationFrame(drawBg);
@@ -291,7 +298,7 @@
     });
     ctx.globalAlpha = 1;
     // пролетающие диагональные вспышки
-    if (!REDUCED && Math.random() < 0.012 && bg.streaks.length < 2) bg.streaks.push({ x: W * (0.4 + Math.random() * 0.7), y: -40 + Math.random() * H * 0.5, life: 0 });
+    if (!REDUCED && Math.random() < (bg.W < 700 ? 0.005 : 0.012) && bg.streaks.length < 2) bg.streaks.push({ x: W * (0.4 + Math.random() * 0.7), y: -40 + Math.random() * H * 0.5, life: 0 });
     bg.streaks = bg.streaks.filter((s) => s.life < 1);
     bg.streaks.forEach((s) => {
       s.life += 0.022;
@@ -384,6 +391,7 @@
     if (g('[data-shot]')) {
       const b = g('[data-shot]');
       $('#galmain').innerHTML = '<img src="' + b.dataset.shot + '" alt="">';
+      fitGal();
       b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
       return;
     }

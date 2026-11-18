@@ -314,3 +314,54 @@ a.way:hover .arr { animation: nudge .9s ease-in-out infinite; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .reveal { opacity: 1; }
 }
+
+/* ---------- страница проекта: сетка не распирается содержимым ---------- */
+.sh-top > *, .sh-bottom > *, .sup-banner > *, .grid > * { min-width: 0; }
+.gal-row { scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+.gal-row::-webkit-scrollbar { display: none; }
+.gal-row button { scroll-snap-align: start; }
+
+/* ---------- телефон ---------- */
+@media (max-width: 760px) {
+  html, body { overflow-x: hidden; }
+  .grain { animation: none; opacity: .06; }
+  .hero { min-height: 560px; height: 100svh; }
+  .slide h1 { font-size: clamp(22px, 7.4vw, 30px); }
+  .slide .hook { font-size: 16px; margin: 14px 0 22px; }
+  .btn { padding: 13px 18px; font-size: 22px; }
+  .tags { margin-bottom: 14px; }
+  .tag { font-size: 17px; padding: 6px 10px; }
+  .block { padding-top: 70px; }
+  .block-head { margin-bottom: 20px; }
+  .tile h3 { font-size: 16px; }
+  .tile-body { padding: 16px 18px 18px; }
+
+  /* страница проекта на весь экран */
+  .sheet { padding: 0; place-items: stretch; }
+  .sheet-card { width: 100%; max-height: none; height: 100%; clip-path: none; animation: sheetup .45s cubic-bezier(.22,.8,.24,1); overflow-x: hidden; overscroll-behavior: contain; }
+  .sheet-card::before { display: none; }
+  @keyframes sheetup { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sheet-x { position: fixed; right: 12px; top: 12px; width: 44px; height: 44px; font-size: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, .6); }
+  .gal-main { aspect-ratio: 16 / 10; }
+  .gal-main.tall { aspect-ratio: auto; height: min(64vh, 540px); }
+  .gal-main img { object-fit: contain; }
+  .gal-row { padding: 8px 12px; }
+  .gal-row button { width: 76px; height: 52px; }
+  .sh-info { padding: 22px 18px 18px; gap: 14px; }
+  .sh-info h2 { font-size: 20px; }
+  .sh-info .hook { font-size: 17px; }
+  .sh-info .cta .btn { width: 100%; justify-content: center; }
+  .sh-bottom > div { padding: 18px 18px 24px; }
+  .sh-bottom > div + div { padding-top: 0; }
+
+  .sup-text h2 { font-size: 20px; }
+  .way { grid-template-columns: 40px 1fr auto; gap: 12px; padding: 14px; }
+  .way .ic { width: 40px; height: 40px; }
+  .addr code { font-size: 12px; }
+  .marquee .run { animation-duration: 22s; }
+}
+/* на сенсорных экранах нет наведения — кадры в библиотеке слегка цветные, чтобы было видно, что это за проект */
+@media (hover: none) {
+  .tile-media img, .tile-media .art { filter: grayscale(.35) contrast(1.05) brightness(.9); }
+  .tile:hover { transform: none; }
+}
