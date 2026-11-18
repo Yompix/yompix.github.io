@@ -1,8 +1,31 @@
 /* Сайт Yompix Games: витрина, библиотека проектов, страница проекта, поддержка и живые спонсоры. */
 (() => {
-  const LANGS = [['ru', 'RU'], ['uk', 'UA'], ['en', 'EN']];
-  const nav = (navigator.language || 'en').slice(0, 2);
-  let lang = localStorage.getItem('yg_lang') || (nav === 'uk' ? 'uk' : ['ru', 'be', 'kk'].includes(nav) ? 'ru' : 'en');
+  /* Язык по стране (часовой пояс устройства, без запросов в интернет):
+     Украина — русский и украинский на выбор; Россия и русскоязычные страны — только русский; остальные — только английский.
+     Проверка: ?region=ua|ru|en */
+  const UA_TZ = ['Europe/Kiev', 'Europe/Kyiv', 'Europe/Uzhgorod', 'Europe/Zaporozhye', 'Europe/Simferopol'];
+  const RU_TZ = ['Europe/Moscow', 'Europe/Kaliningrad', 'Europe/Samara', 'Europe/Volgograd', 'Europe/Saratov', 'Europe/Ulyanovsk', 'Europe/Astrakhan',
+    'Europe/Kirov', 'Europe/Minsk', 'Europe/Chisinau', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Barnaul', 'Asia/Tomsk',
+    'Asia/Novokuznetsk', 'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Chita', 'Asia/Yakutsk', 'Asia/Khandyga', 'Asia/Vladivostok', 'Asia/Ust-Nera',
+    'Asia/Magadan', 'Asia/Sakhalin', 'Asia/Srednekolymsk', 'Asia/Kamchatka', 'Asia/Anadyr', 'Asia/Almaty', 'Asia/Qostanay', 'Asia/Aqtobe',
+    'Asia/Aqtau', 'Asia/Atyrau', 'Asia/Oral', 'Asia/Qyzylorda', 'Asia/Bishkek', 'Asia/Dushanbe', 'Asia/Tashkent', 'Asia/Samarkand',
+    'Asia/Ashgabat', 'Asia/Yerevan', 'Asia/Baku'];
+  function region() {
+    const forced = new URLSearchParams(location.search).get('region');
+    if (forced) return forced;
+    let tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* старый браузер */ }
+    if (UA_TZ.includes(tz)) return 'ua';
+    if (RU_TZ.includes(tz)) return 'ru';
+    if (tz) return 'en';
+    const l = (navigator.language || 'en').slice(0, 2);   // часового пояса нет — по языку браузера
+    return l === 'uk' ? 'ua' : ['ru', 'be', 'kk', 'ky', 'tg', 'uz', 'hy', 'az'].includes(l) ? 'ru' : 'en';
+  }
+  const REGION = region();
+  const LANGS = REGION === 'ua' ? [['uk', 'UA'], ['ru', 'RU']] : REGION === 'ru' ? [['ru', 'RU']] : [['en', 'EN']];
+  const saved = localStorage.getItem('yg_lang');
+  const navUk = (navigator.languages || [navigator.language || '']).some((x) => String(x).startsWith('uk'));
+  let lang = LANGS.some(([k]) => k === saved) ? saved : REGION === 'ua' ? (navUk ? 'uk' : 'ru') : LANGS[0][0];
   let cat = 'all';
   let slide = 0;
   let timer = null;
@@ -149,7 +172,8 @@
   function render() {
     document.documentElement.lang = lang;
     document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
-    $('#langs').innerHTML = LANGS.map(([k, n]) => `<button class="${k === lang ? 'on' : ''}" data-l="${k}">${n}</button>`).join('');
+    $('#langs').innerHTML = LANGS.length > 1 ? LANGS.map(([k, n]) => `<button class="${k === lang ? 'on' : ''}" data-l="${k}">${n}</button>`).join('') : '';
+    $('#langs').hidden = LANGS.length < 2;
     renderHero();
     renderGrid();
     renderSupport();
