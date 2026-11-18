@@ -98,35 +98,33 @@
   }
   function pixelWipe(cv, mid, done) {
     const r = cv.getBoundingClientRect();
-    const cell = Math.max(28, Math.round(Math.min(r.width, r.height) / 14));
+    const cell = Math.max(22, Math.round(Math.min(r.width, r.height) / 20));
     const cw = Math.ceil(r.width / cell), ch = Math.ceil(r.height / cell);
     cv.width = cw; cv.height = ch;
     cv.style.imageRendering = 'pixelated';
     const ctx = cv.getContext('2d');
-    const n = cw * ch;
-    const order = [];
-    for (let k = 0; k < n; k++) order.push(k);
-    const key = order.map((k) => (k % cw) / cw * 0.6 + Math.random() * 0.4);   // волна слева направо + случайность
-    order.sort((a, b) => key[a] - key[b]);
-    const shade = order.map((c) => 6 + ((c * 37) % 5) * 6);                  // разные оттенки чёрного
-    const IN = 420, OUT = 520;
+    const delay = [];   // у каждой клетки своё время: волна по диагонали + немного случайности
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) delay.push((x / cw) * 0.55 + (y / ch) * 0.15 + Math.random() * 0.3);
+    const shade = delay.map((d, k) => 6 + ((k * 37) % 5) * 5);
+    const DUR = 1300, CELL = 0.22;   // вся смена и длительность затухания одной клетки (доля)
+    const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
     let t0 = null, swapped = false;
     function frame(ts) {
       if (t0 === null) t0 = ts;
-      const e = ts - t0;
+      const e = Math.min(1, (ts - t0) / DUR);
       ctx.clearRect(0, 0, cw, ch);
-      let a = 0, b = 0;
-      if (e < IN) { a = 0; b = Math.floor(n * e / IN); }
-      else {
-        if (!swapped) { swapped = true; mid(); }
-        a = Math.floor(n * Math.min(1, (e - IN) / OUT)); b = n;
+      if (!swapped && e >= 0.5) { swapped = true; mid(); }
+      for (let k = 0; k < delay.length; k++) {
+        const d = delay[k] / 1.0 * 0.5 * (1 - CELL * 2) / 0.5;      // начало закрытия клетки в первой половине
+        const a1 = ease((e - d * 0.5) / CELL);                     // закрывается
+        const a2 = ease((e - 0.5 - d * 0.5) / CELL);               // открывается
+        const a = Math.max(0, a1 - a2);
+        if (a <= 0.01) continue;
+        const g = shade[k];
+        ctx.fillStyle = 'rgba(' + g + ',' + g + ',' + g + ',' + a.toFixed(3) + ')';
+        ctx.fillRect(k % cw, Math.floor(k / cw), 1, 1);
       }
-      for (let k = a; k < b; k++) {
-        const c = order[k], g = shade[k];
-        ctx.fillStyle = 'rgb(' + g + ',' + g + ',' + g + ')';
-        ctx.fillRect(c % cw, Math.floor(c / cw), 1, 1);
-      }
-      if (e < IN + OUT) requestAnimationFrame(frame);
+      if (e < 1) requestAnimationFrame(frame);
       else { ctx.clearRect(0, 0, cw, ch); done(); }
     }
     requestAnimationFrame(frame);
@@ -224,7 +222,7 @@
     return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
   }
   const fbm = (x, y) => vnoise(x, y) * 0.55 + vnoise(x * 2.1, y * 2.1) * 0.3 + vnoise(x * 4.3, y * 4.3) * 0.15;
-  const bg = { cv: null, ctx: null, base: null, W: 0, H: 0, cell: 14, crosses: [], streaks: [], last: 0 };
+  const bg = { cv: null, ctx: null, base: null, W: 0, H: 0, cell: 14, crosses: [], streaks: [], off: 0 };
   function buildBg() {
     const cv = $('#bg');
     const W = innerWidth, H = innerHeight;
@@ -277,12 +275,13 @@
   }
   function drawBg(ts) {
     requestAnimationFrame(drawBg);
-    if (!bg.base || ts - bg.last < 33) return;   // ~30 кадров в секунду хватает
-    bg.last = ts;
+    if (!bg.base) return;
     const ctx = bg.ctx, W = bg.W, H = bg.H;
     const maxOff = bg.base.height - H;
     const docH = Math.max(1, document.documentElement.scrollHeight - H);
-    const off = Math.round(Math.min(1, scrollY / docH) * maxOff);
+    const target = Math.min(1, scrollY / docH) * maxOff;
+    bg.off += (target - bg.off) * 0.12;                 // фон догоняет прокрутку мягко
+    const off = bg.off;
     ctx.drawImage(bg.base, 0, -off);
     // мерцающие пиксельные крестики
     ctx.fillStyle = '#e8e8e4';
@@ -291,7 +290,7 @@
       if (a < -0.2) return;
       const s = c.s, x = Math.round(c.x), y = Math.round(c.y - off);
       if (y < -20 || y > H + 20) return;
-      ctx.globalAlpha = Math.round((0.35 + 0.65 * Math.max(0, a)) * 4) / 4;
+      ctx.globalAlpha = 0.25 + 0.75 * Math.max(0, a);
       ctx.fillRect(x - s, y - s * 3, s * 2, s * 6);
       ctx.fillRect(x - s * 3, y - s, s * 6, s * 2);
     });
@@ -300,7 +299,7 @@
     if (!REDUCED && Math.random() < 0.012 && bg.streaks.length < 2) bg.streaks.push({ x: W * (0.4 + Math.random() * 0.7), y: -40 + Math.random() * H * 0.5, life: 0 });
     bg.streaks = bg.streaks.filter((s) => s.life < 1);
     bg.streaks.forEach((s) => {
-      s.life += 0.05;
+      s.life += 0.022;
       const len = 160, dx = -Math.cos(0.5) * len, dy = Math.sin(0.5) * len;
       const px = s.x + dx * s.life * 3, py = s.y + dy * s.life * 3;
       const gr = ctx.createLinearGradient(px, py, px - dx, py - dy);
@@ -330,20 +329,23 @@
     const ctx = cv.getContext('2d');
     const px = [];
     word.split('').forEach((ch, i) => GLYPH[ch].forEach((row, y) => row.split('').forEach((b, x) => { if (b === '1') px.push({ x: (i * 6 + x) * S, y: (y + 1) * S, d: Math.random() }); })));
+    const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3));
+    const W = cv.width;
+    px.forEach((p) => { p.d = (p.x / W) * 0.7 + p.d * 0.25; });   // слева направо с лёгким разбросом
     let t0 = null;
     function frame(ts) {
       if (t0 === null) t0 = ts;
       const e = (ts - t0) / 1000;
       ctx.clearRect(0, 0, cv.width, cv.height);
       px.forEach((p) => {
-        const on = e < 1.4 ? e * 1.4 > p.d : (e - 1.4) * 2.4 < p.d;   // появиться, подержать, рассыпаться
-        if (!on) return;
-        const shake = e > 0.9 && e < 1.4 && Math.random() < 0.04 ? (Math.random() - 0.5) * S : 0;
-        ctx.fillStyle = Math.random() < 0.03 ? '#777' : '#f1f1ee';
-        ctx.fillRect(p.x + shake, p.y, S - 2, S - 2);
+        const k = ease((e - p.d * 0.9) / 0.35);              // клетка вырастает за 0.35 с
+        if (k <= 0) return;
+        const sz = (S - 2) * k, o = (S - 2 - sz) / 2;
+        ctx.fillStyle = 'rgba(241,241,238,' + k.toFixed(3) + ')';
+        ctx.fillRect(p.x + o, p.y + o, sz, sz);
       });
-      if (e < 1.95) requestAnimationFrame(frame);
-      else { el.classList.add('gone'); setTimeout(() => el.remove(), 600); }
+      if (e < 2.0) requestAnimationFrame(frame);
+      else el.classList.add('gone'), setTimeout(() => el.remove(), 800);
     }
     requestAnimationFrame(frame);
   }
