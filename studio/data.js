@@ -47,10 +47,10 @@ const UI = {
   copy: { ru: 'Копировать', uk: 'Копіювати', en: 'Copy' },
   copied: { ru: 'Адрес скопирован', uk: 'Адресу скопійовано', en: 'Address copied' },
   wall_title: { ru: 'Спонсоры', uk: 'Спонсори', en: 'Sponsors' },
-  wall_total: { ru: '%n человек · %s ⭐', uk: '%n осіб · %s ⭐', en: '%n people · %s ⭐' },
+  wall_total: { ru: '%n человек · %s ★', uk: '%n осіб · %s ★', en: '%n people · %s ★' },
   wall_you: { ru: 'здесь может быть ваше имя', uk: 'тут може бути ваше ім’я', en: 'your name could be here' },
   foot_contact: { ru: 'Связаться', uk: 'Зв’язатися', en: 'Contact' },
-  foot_fonts: { ru: 'шрифты Unbounded и Inter (SIL OFL)', uk: 'шрифти Unbounded та Inter (SIL OFL)', en: 'fonts: Unbounded and Inter (SIL OFL)' },
+  foot_fonts: { ru: 'шрифты Press Start 2P, Handjet и Inter (SIL OFL)', uk: 'шрифти Press Start 2P, Handjet та Inter (SIL OFL)', en: 'fonts: Press Start 2P, Handjet and Inter (SIL OFL)' },
 };
 
 /* Проекты. key — главная картинка (или art — нарисованная обложка), shots — галерея. */
