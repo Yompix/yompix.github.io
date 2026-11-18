@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>YOMPIX GAMES — игры, моды и приложения инди-разработчика</title>
+<meta name="description" content="Yompix Games: хоррор Hush Till Six, Office Dreams в Telegram, мод «Новоград» и LANTERN для Minecraft, Unity Boost RU, YURK VPN. Всё делает один разработчик.">
+<meta property="og:title" content="YOMPIX GAMES">
+<meta property="og:description" content="Игры, моды и приложения одного инди-разработчика из Украины.">
+<meta property="og:image" content="https://yompix.github.io/studio/img/og.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b0c10">
+<link rel="icon" href="img/favicon.png">
+<link rel="preload" href="fonts/Oswald.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="logo" href="#top" aria-label="Yompix Games"><span class="logo-mark">Y</span>YOMPIX<b>GAMES</b></a>
+  <nav class="nav" id="nav"></nav>
+  <div class="langs" id="langs"></div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="hero-strip" id="strip" aria-hidden="true"></div>
+    <div class="hero-in">
+      <p class="eyebrow" data-t="hero_eyebrow"></p>
+      <h1 class="hero-title">YOMPIX<br><span>GAMES</span></h1>
+      <p class="hero-lead" data-t="hero_lead"></p>
+      <div class="hero-cta">
+        <a class="btn btn-amber" href="#games" data-t="hero_cta_play"></a>
+        <a class="btn btn-ghost" href="#support" data-t="hero_cta_support"></a>
+      </div>
+    </div>
+    <a class="hero-down" href="#games" aria-label="↓">↓</a>
+  </section>
+
+  <div id="sections"></div>
+
+  <section class="support" id="support">
+    <div class="sec-head">
+      <span class="sec-no">05</span>
+      <h2 data-t="sup_title"></h2>
+      <p class="sec-lead" data-t="sup_lead"></p>
+    </div>
+    <div class="sup-grid" id="supgrid"></div>
+    <div class="wall">
+      <div class="wall-head">
+        <h3 data-t="wall_title"></h3>
+        <p class="wall-total" id="walltotal"></p>
+      </div>
+      <ul class="wall-list" id="wall"></ul>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <a class="logo" href="#top"><span class="logo-mark">Y</span>YOMPIX<b>GAMES</b></a>
+    <p data-t="foot_text"></p>
+    <div class="foot-links">
+      <a href="https://t.me/yompixgames" target="_blank" rel="noopener">Telegram @yompixgames</a>
+      <a href="https://t.me/vtmjs" target="_blank" rel="noopener" data-t="foot_contact"></a>
+      <a href="https://yompix-games.itch.io" target="_blank" rel="noopener">itch.io</a>
+    </div>
+    <p class="foot-small">© <span id="year"></span> Yompix · <span data-t="foot_fonts"></span></p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
