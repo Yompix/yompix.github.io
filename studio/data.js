@@ -10,6 +10,7 @@ const SUPPORT = {
   usdt_ton: '',     // USDT / TON в сети TON
   mono: '',         // банка Monobank: https://send.monobank.ua/jar/...
   channel: 'https://t.me/yompixgames',
+  discord: 'yompixgames',   // ник в Discord для связи (ссылки на профиль нет — показываем ник с кнопкой «Скопировать»)
 };
 
 const UI = {
@@ -49,7 +50,8 @@ const UI = {
   wall_title: { ru: 'Спонсоры', uk: 'Спонсори', en: 'Sponsors' },
   wall_total: { ru: '%n человек · %s ★', uk: '%n осіб · %s ★', en: '%n people · %s ★' },
   wall_you: { ru: 'здесь может быть ваше имя', uk: 'тут може бути ваше ім’я', en: 'your name could be here' },
-  foot_contact: { ru: 'Связаться', uk: 'Зв’язатися', en: 'Contact' },
+  foot_contact: { ru: 'Связь — Discord:', uk: 'Зв’язок — Discord:', en: 'Contact — Discord:' },
+  copied_nick: { ru: 'Ник скопирован', uk: 'Нік скопійовано', en: 'Username copied' },
   foot_fonts: { ru: 'шрифты Press Start 2P, Handjet и Inter (SIL OFL)', uk: 'шрифти Press Start 2P, Handjet та Inter (SIL OFL)', en: 'fonts: Press Start 2P, Handjet and Inter (SIL OFL)' },
 };
 
@@ -75,7 +77,7 @@ const PROJECTS = [
   },
   {
     id: 'novograd', cat: 'mc', featured: true, accent: '#ff4fa0',
-    name: { ru: 'Новоград: Тёмные улицы', uk: 'Новоград: Темні вулиці', en: 'Novograd: Dark Streets' }, version: '0.6.4', status: 'st_download',
+    name: { ru: 'Новоград: Тёмные улицы', uk: 'Новоград: Темні вулиці', en: 'Novograd: Dark Streets' }, version: '0.6.5', status: 'st_download',
     art: 'novograd',
     type: { ru: 'Мод · Minecraft Java 1.21.1 · Fabric', uk: 'Мод · Minecraft Java 1.21.1 · Fabric', en: 'Mod · Minecraft Java 1.21.1 · Fabric' },
     hook: { ru: 'Криминальная история в открытом мире — внутри Minecraft.', uk: 'Кримінальна історія у відкритому світі — всередині Minecraft.', en: 'An open-world crime story — inside Minecraft.' },
@@ -84,11 +86,11 @@ const PROJECTS = [
       uk: 'Острів із містом Новоград і курортом Рив’єра. Сюжетні місії з озвучкою й кат-сценами, дзвінки героїв, розшук, машини, пограбування й вільна гра між місіями.',
       en: 'An island with the city of Novograd and the Riviera resort. Voiced story missions with cutscenes, calls from characters, a wanted system, cars, heists and free roam between missions.' },
     features: { ru: ['Сюжет с озвучкой', 'Побочные задания', 'Розыск и погони', 'Машины', 'Копы и воры по сети'], uk: ['Сюжет з озвучкою', 'Побічні завдання', 'Розшук і погоні', 'Машини', 'Копи й злодії по мережі'], en: ['Voiced story', 'Side jobs', 'Wanted level and chases', 'Cars', 'Online cops & robbers'] },
-    platforms: { ru: 'Minecraft Java 1.21.1 (Fabric)', uk: 'Minecraft Java 1.21.1 (Fabric)', en: 'Minecraft Java 1.21.1 (Fabric)' },
-    how: { ru: 'Скачайте архив и запустите установщик. Затем: Новый мир → Ещё → Тип мира «Новоград: Город».', uk: 'Завантажте архів і запустіть установник. Потім: Новий світ → Ще → Тип світу «Новоград: Місто».', en: 'Download the archive and run the installer. Then: New World → More → World Type “Novograd: City”.' },
+    platforms: { ru: 'Minecraft Java 1.21.1 · любой лаунчер', uk: 'Minecraft Java 1.21.1 · будь-який лаунчер', en: 'Minecraft Java 1.21.1 · any launcher' },
+    how: { ru: 'Скачайте архив и запустите УСТАНОВИТЬ.bat — он сам поставит Fabric и всё нужное. Подходит официальный лаунчер, TLauncher и любой другой; для Prism и Modrinth — файл .mrpack. В игре: Новый мир → Ещё → Тип мира «Новоград: Город».', uk: 'Завантажте архів і запустіть УСТАНОВИТЬ.bat — він сам поставить Fabric і все потрібне. Підходить офіційний лаунчер, TLauncher і будь-який інший; для Prism і Modrinth — файл .mrpack. У грі: Новий світ → Ще → Тип світу «Новоград: Місто».', en: 'Download the archive and run УСТАНОВИТЬ.bat — it installs Fabric and everything else. Works with the official launcher, TLauncher and others; for Prism and Modrinth use the .mrpack. In game: New World → More → World Type “Novograd: City”.' },
     links: [
-      { t: { ru: 'Скачать для TLauncher', uk: 'Завантажити для TLauncher', en: 'Download for TLauncher' }, url: 'dl/Novograd-Kino-TLauncher-0.6.4.zip', size: '81 MB', dl: true },
-      { t: { ru: 'Modrinth / Prism (.mrpack)', uk: 'Modrinth / Prism (.mrpack)', en: 'Modrinth / Prism (.mrpack)' }, url: 'dl/Novograd-Kino-0.6.4.mrpack', size: '81 MB', dl: true },
+      { t: { ru: 'Скачать (любой лаунчер)', uk: 'Завантажити (будь-який лаунчер)', en: 'Download (any launcher)' }, url: 'dl/Novograd-0.6.5.zip', size: '81 MB', dl: true },
+      { t: { ru: 'Prism / Modrinth (.mrpack)', uk: 'Prism / Modrinth (.mrpack)', en: 'Prism / Modrinth (.mrpack)' }, url: 'dl/Novograd-0.6.5.mrpack', size: '81 MB', dl: true },
     ],
   },
   {

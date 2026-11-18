@@ -395,6 +395,13 @@
       b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
       return;
     }
+    if (g('[data-copynick]')) {
+      const v = SUPPORT.discord;
+      const ok = () => toast(t('copied_nick'));
+      const fallback = () => { const ta = document.createElement('textarea'); ta.value = v; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); ok(); };
+      if (navigator.clipboard) navigator.clipboard.writeText(v).then(ok, fallback); else fallback();
+      return;
+    }
     if (g('[data-copy]')) {
       const v = g('[data-copy]').dataset.copy;
       const fallback = () => { const ta = document.createElement('textarea'); ta.value = v; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast(t('copied')); };
@@ -419,6 +426,7 @@
   addEventListener('resize', () => { if (innerWidth === lastW && innerHeight <= bg.H) return; lastW = innerWidth; clearTimeout(rz); rz = setTimeout(buildBg, 250); });
 
   $('#year').textContent = new Date().getFullYear();
+  if ($('#dcnick')) $('#dcnick').textContent = SUPPORT.discord;
   buildBg();
   requestAnimationFrame(drawBg);
   render();

@@ -365,3 +365,8 @@ a.way:hover .arr { animation: nudge .9s ease-in-out infinite; }
   .tile-media img, .tile-media .art { filter: grayscale(.35) contrast(1.05) brightness(.9); }
   .tile:hover { transform: none; }
 }
+.dc { display: inline-flex; align-items: center; gap: 8px; }
+.dc-nick { border: 0; cursor: pointer; background: #fff; color: #000; padding: 6px 10px; font: 600 20px/1 Pixel, sans-serif; clip-path: polygon(0 3px, 3px 3px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px), 0 calc(100% - 3px)); }
+.dc-nick::before { content: "@"; opacity: .5; }
+.dc-nick:hover { background: #d9d9d4; }
+.foot { position: relative; background: rgba(5, 5, 5, .94); box-shadow: 0 0 0 100vmax rgba(5, 5, 5, .94); clip-path: inset(0 -100vmax -100vmax); }
