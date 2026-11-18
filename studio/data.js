@@ -28,7 +28,7 @@ const UI = {
   features: { ru: 'Что внутри', uk: 'Що всередині', en: 'What’s inside' },
   how: { ru: 'Как начать', uk: 'Як почати', en: 'How to start' },
   st_live: { ru: 'Работает', uk: 'Працює', en: 'Live' },
-  st_playtest: { ru: 'Плейтест', uk: 'Плейтест', en: 'Playtest' },
+  st_playtest: { ru: 'Временный тест', uk: 'Тимчасовий тест', en: 'Limited test' },
   st_download: { ru: 'Можно скачать', uk: 'Можна завантажити', en: 'Available' },
   close: { ru: 'Закрыть', uk: 'Закрити', en: 'Close' },
   sup_kicker: { ru: 'Инди без издателя', uk: 'Інді без видавця', en: 'Indie, no publisher' },
@@ -69,9 +69,9 @@ const PROJECTS = [
       en: 'A night guard’s first shift at the Horizon business centre. Three rules, security cameras — and what happens when a rule is broken.' },
     features: { ru: ['14 смертей', '4 концовки', 'Озвучка', '13 языков'], uk: ['14 смертей', '4 кінцівки', 'Озвучка', '13 мов'], en: ['14 deaths', '4 endings', 'Voice acting', '13 languages'] },
     platforms: { ru: 'Браузер · Android · Windows', uk: 'Браузер · Android · Windows', en: 'Browser · Android · Windows' },
-    how: { ru: 'Плейтест прямо в браузере. Скоро в Google Play и Steam.', uk: 'Плейтест просто в браузері. Скоро в Google Play і Steam.', en: 'Playtest right in your browser. Coming to Google Play and Steam.' },
+    how: { ru: 'Сейчас идёт временное тестирование: тестировщиком может стать каждый — играйте прямо в браузере, без установки. Когда игра выйдет в Steam и Google Play, эта версия закроется или останется только демо.', uk: 'Зараз триває тимчасове тестування: тестувальником може стати кожен — грайте просто в браузері, без встановлення. Коли гра вийде в Steam і Google Play, ця версія закриється або залишиться лише демо.', en: 'A limited test is running right now: anyone can become a tester — play right in your browser, nothing to install. Once the game launches on Steam and Google Play, this version will close or only a demo will remain.' },
     links: [
-      { t: { ru: 'Играть в браузере', uk: 'Грати в браузері', en: 'Play in browser' }, url: 'https://yompix.github.io/' },
+      { t: { ru: 'Стать тестировщиком', uk: 'Стати тестувальником', en: 'Become a tester' }, url: 'https://yompix.github.io/' },
       { t: { ru: 'itch.io', uk: 'itch.io', en: 'itch.io' }, url: 'https://yompix-games.itch.io/hush-till-six' },
     ],
   },
@@ -114,7 +114,7 @@ const PROJECTS = [
   {
     id: 'vpn', cat: 'tg', accent: '#3fd1c0',
     name: 'YURK VPN', version: '0.1.0', status: 'st_live',
-    art: 'vpn',
+    art: 'vpn', shotsByLang: { ru: ['img/vpn-ru-1.webp', 'img/vpn-ru-2.webp', 'img/vpn-ru-3.webp'], en: ['img/vpn-en-1.webp', 'img/vpn-en-2.webp', 'img/vpn-en-3.webp'] },
     type: { ru: 'VPN-бот в Telegram', uk: 'VPN-бот у Telegram', en: 'VPN bot on Telegram' },
     hook: { ru: 'VPN, который покупается в два касания.', uk: 'VPN, що купується у два дотики.', en: 'A VPN you buy in two taps.' },
     about: {
@@ -128,18 +128,18 @@ const PROJECTS = [
   },
   {
     id: 'ub', cat: 'tools', accent: '#7be08f',
-    name: 'Unity Boost RU', version: '1.0.0', status: 'st_download',
+    name: 'Unity Boost', version: '1.1.0', status: 'st_download',
     art: 'boost',
     type: { ru: 'Утилита для Windows', uk: 'Утиліта для Windows', en: 'Windows utility' },
-    hook: { ru: 'Unity-игры меньше лагают и говорят по-русски.', uk: 'Unity-ігри менше лагають і говорять російською.', en: 'Unity games lag less — and speak Russian.' },
+    hook: { ru: 'Unity-игры меньше лагают и говорят на вашем языке.', uk: 'Unity-ігри менше лагають і говорять вашою мовою.', en: 'Unity games lag less — and speak your language.' },
     about: {
-      ru: 'Ставится в одиночную игру на Unity. Упрощает графику, чтобы игра шла плавнее на слабом ноутбуке, и прямо во время игры переводит английский текст на русский.',
-      uk: 'Ставиться в одиночну гру на Unity. Спрощує графіку, щоб гра йшла плавніше на слабкому ноутбуці, і просто під час гри перекладає англійський текст російською.',
-      en: 'Installs into a single-player Unity game. Simplifies graphics so it runs smoother on a weak laptop, and translates English text to Russian on the fly.' },
-    features: { ru: ['Пресеты качества', 'Переключение F9 / F10', 'Автоперевод EN → RU', 'Только одиночные игры'], uk: ['Пресети якості', 'Перемикання F9 / F10', 'Автопереклад EN → RU', 'Лише одиночні ігри'], en: ['Quality presets', 'F9 / F10 toggles', 'Auto-translate EN → RU', 'Single-player only'] },
+      ru: 'Ставится в одиночную игру на Unity. Упрощает графику, чтобы игра шла плавнее на слабом ноутбуке, и прямо во время игры переводит текст на выбранный язык — через Google или качественнее через DeepL.',
+      uk: 'Ставиться в одиночну гру на Unity. Спрощує графіку, щоб гра йшла плавніше на слабкому ноутбуці, і просто під час гри перекладає текст обраною мовою — через Google або якісніше через DeepL.',
+      en: 'Installs into a single-player Unity game. Simplifies graphics so it runs smoother on a weak laptop, and translates the text into your chosen language on the fly — via Google, or better via DeepL.' },
+    features: { ru: ['Пресеты качества', 'Переключение F9 / F10', 'Перевод на 20+ языков', 'DeepL или Google'], uk: ['Пресети якості', 'Перемикання F9 / F10', 'Переклад 20+ мовами', 'DeepL або Google'], en: ['Quality presets', 'F9 / F10 toggles', 'Translation into 20+ languages', 'DeepL or Google'] },
     platforms: { ru: 'Windows', uk: 'Windows', en: 'Windows' },
-    how: { ru: 'Распакуйте архив, запустите «Установить.bat» и выберите .exe игры. Не используйте в онлайн-играх с античитом.', uk: 'Розпакуйте архів, запустіть «Установить.bat» і виберіть .exe гри. Не використовуйте в онлайн-іграх з античитом.', en: 'Unzip, run “Установить.bat” and pick the game’s .exe. Never use it in online games with anti-cheat.' },
-    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/UnityBoostRU.zip', size: '65 MB', dl: true }],
+    how: { ru: 'Распакуйте архив, запустите «Установить.bat», выберите .exe игры, язык игры и язык перевода. Сменить язык потом — «Сменить язык перевода.bat». Не используйте в онлайн-играх с античитом.', uk: 'Розпакуйте архів, запустіть «Установить.bat», виберіть .exe гри, мову гри й мову перекладу. Змінити мову потім — «Сменить язык перевода.bat». Не використовуйте в онлайн-іграх з античитом.', en: 'Unzip, run “Установить.bat”, pick the game’s .exe, the game language and the language to translate into. To change it later — “Сменить язык перевода.bat”. Never use it in online games with anti-cheat.' },
+    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/UnityBoost.zip', size: '65 MB', dl: true }],
   },
 ];
 

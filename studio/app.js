@@ -157,7 +157,8 @@
   function openSheet(id, push) {
     const p = P(id);
     if (!p) return;
-    const shots = p.shots && p.shots.length ? p.shots : null;
+    const list = p.shotsByLang ? (p.shotsByLang[lang] || (lang === 'en' ? p.shotsByLang.en : p.shotsByLang.ru)) : p.shots;
+    const shots = list && list.length ? list : null;
     const card = $('#sheetcard');
     card.innerHTML =
       '<button class="sheet-x" data-close aria-label="' + t('close') + '">×</button>' +

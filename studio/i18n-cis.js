@@ -166,6 +166,137 @@
         ['Presetări de calitate', 'Comutare F9 / F10', 'Traducere automată EN → RU', 'Doar jocuri single-player'], 'Windows', 'Dezarhivează, rulează „Установить.bat” și alege fișierul .exe al jocului. Nu-l folosi în jocuri online cu anti-cheat.', ['Descarcă pentru Windows']],
     },
   };
+
+  /* правки 18 ноя: временный тест Hush Till Six, Unity Boost 1.1 (любой язык, DeepL) */
+  const UPD = {
+ "kk": {
+  "st": "Уақытша тест",
+  "how": "Қазір уақытша тестілеу жүріп жатыр: тестілеуші кез келген адам бола алады — браузерде, орнатусыз ойнаңыз. Ойын Steam мен Google Play-де шыққанда, бұл нұсқа жабылады немесе тек демо қалады.",
+  "btn": "Тестілеуші болу",
+  "hook": "Unity-ойындар азырақ қатады және сіздің тіліңізде сөйлейді.",
+  "about": "Unity-дегі жалғыз ойыншы ойынына орнатылады. Әлсіз ноутбукта ойын бірқалыпты жүруі үшін графиканы жеңілдетеді және ойын кезінде мәтінді таңдалған тілге аударады — Google арқылы немесе сапалырақ DeepL арқылы.",
+  "f": [
+   "Сапа пресеттері",
+   "F9 / F10 ауыстыру",
+   "20+ тілге аударма",
+   "DeepL немесе Google"
+  ],
+  "uhow": "Мұрағатты ашып, «Установить.bat» іске қосыңыз, ойынның .exe файлын, ойын тілін және аударма тілін таңдаңыз. Тілді кейін ауыстыру — «Сменить язык перевода.bat». Античиті бар онлайн-ойындарда қолданбаңыз."
+ },
+ "be": {
+  "st": "Часовы тэст",
+  "how": "Зараз ідзе часовае тэставанне: тэстарам можа стаць кожны — гуляйце проста ў браўзеры, без усталёўкі. Калі гульня выйдзе ў Steam і Google Play, гэтая версія закрыецца або застанецца толькі дэма.",
+  "btn": "Стаць тэстарам",
+  "hook": "Unity-гульні менш лагаюць і гавораць на вашай мове.",
+  "about": "Ставіцца ў адзіночную гульню на Unity. Спрашчае графіку, каб гульня ішла плаўней на слабым ноўтбуку, і проста падчас гульні перакладае тэкст на абраную мову — праз Google або якасней праз DeepL.",
+  "f": [
+   "Прэсэты якасці",
+   "Пераключэнне F9 / F10",
+   "Пераклад на 20+ моў",
+   "DeepL або Google"
+  ],
+  "uhow": "Распакуйце архіў, запусціце «Установить.bat», выберыце .exe гульні, мову гульні і мову перакладу. Змяніць мову потым — «Сменить язык перевода.bat». Не выкарыстоўвайце ў онлайн-гульнях з антычытам."
+ },
+ "ky": {
+  "st": "Убактылуу тест",
+  "how": "Азыр убактылуу тестирлөө жүрүп жатат: тестирлөөчү ар ким боло алат — браузерде, орнотпостон ойноңуз. Оюн Steam жана Google Play’де чыкканда, бул версия жабылат же демо гана калат.",
+  "btn": "Тестирлөөчү болуу",
+  "hook": "Unity-оюндар азыраак катып, сиздин тилиңизде сүйлөйт.",
+  "about": "Unity’деги жалгыз оюнчу оюнуна орнотулат. Алсыз ноутбукта оюн жылмакай жүрүшү үчүн графиканы жөнөкөйлөтөт жана оюн учурунда текстти тандалган тилге которот — Google аркылуу же сапаттуураак DeepL аркылуу.",
+  "f": [
+   "Сапат пресеттери",
+   "F9 / F10 которуу",
+   "20+ тилге котормо",
+   "DeepL же Google"
+  ],
+  "uhow": "Архивди ачып, «Установить.bat» ишке киргизип, оюндун .exe файлын, оюндун тилин жана котормо тилин тандаңыз. Тилди кийин алмаштыруу — «Сменить язык перевода.bat». Античиттүү онлайн-оюндарда колдонбоңуз."
+ },
+ "uz": {
+  "st": "Vaqtinchalik test",
+  "how": "Hozir vaqtinchalik sinov ketmoqda: har kim sinovchi bo‘lishi mumkin — to‘g‘ridan-to‘g‘ri brauzerda, o‘rnatmasdan o‘ynang. O‘yin Steam va Google Play’da chiqqach, bu versiya yopiladi yoki faqat demo qoladi.",
+  "btn": "Sinovchi bo‘lish",
+  "hook": "Unity o‘yinlari kamroq qotadi va sizning tilingizda gapiradi.",
+  "about": "Unity’dagi yakka o‘yinga o‘rnatiladi. Kuchsiz noutbukda o‘yin silliq ishlashi uchun grafikani soddalashtiradi va o‘yin davomida matnni tanlangan tilga tarjima qiladi — Google orqali yoki sifatliroq DeepL orqali.",
+  "f": [
+   "Sifat presetlari",
+   "F9 / F10 almashtirish",
+   "20+ tilga tarjima",
+   "DeepL yoki Google"
+  ],
+  "uhow": "Arxivni oching, «Установить.bat» ni ishga tushiring, o‘yinning .exe faylini, o‘yin tilini va tarjima tilini tanlang. Tilni keyin o‘zgartirish — «Сменить язык перевода.bat». Antichitli onlayn o‘yinlarda ishlatmang."
+ },
+ "tg": {
+  "st": "Санҷиши муваққатӣ",
+  "how": "Ҳоло санҷиши муваққатӣ меравад: ҳар кас метавонад санҷанда шавад — бевосита дар браузер, бе насб бозӣ кунед. Вақте бозӣ дар Steam ва Google Play мебарояд, ин версия баста мешавад ё танҳо демо мемонад.",
+  "btn": "Санҷанда шудан",
+  "hook": "Бозиҳои Unity камтар меистанд ва бо забони шумо гап мезананд.",
+  "about": "Ба бозии якнафараи Unity насб мешавад. Графикаро сода мекунад, то бозӣ дар ноутбуки заиф ҳамвортар равад, ва ҳангоми бозӣ матнро ба забони интихобшуда тарҷума мекунад — тавассути Google ё босифаттар тавассути DeepL.",
+  "f": [
+   "Пресетҳои сифат",
+   "Иваз бо F9 / F10",
+   "Тарҷума ба 20+ забон",
+   "DeepL ё Google"
+  ],
+  "uhow": "Архивро кушоед, «Установить.bat»-ро оғоз кунед, файли .exe-и бозӣ, забони бозӣ ва забони тарҷумаро интихоб кунед. Иваз кардани забон баъдтар — «Сменить язык перевода.bat». Дар бозиҳои онлайн бо античит истифода набаред."
+ },
+ "tk": {
+  "st": "Wagtlaýyn synag",
+  "how": "Häzir wagtlaýyn synag gidýär: synagçy islendik adam bolup biler — brauzerde, gurnamazdan oýnaň. Oýun Steam we Google Play-de çykanda, bu wersiýa ýapylar ýa-da diňe demo galar.",
+  "btn": "Synagçy bolmak",
+  "hook": "Unity oýunlary az saklanýar we siziň diliňizde gürleýär.",
+  "about": "Unity-däki ýeke oýunçy oýnuna gurnalýar. Gowşak noutbukda oýun ýumşak işlär ýaly grafikany ýönekeýleşdirýär we oýun wagtynda teksti saýlanan dile terjime edýär — Google arkaly ýa-da has hilli DeepL arkaly.",
+  "f": [
+   "Hil presetleri",
+   "F9 / F10 çalyşmak",
+   "20+ dile terjime",
+   "DeepL ýa-da Google"
+  ],
+  "uhow": "Arhiwi açyň, «Установить.bat» işlediň, oýnuň .exe faýlyny, oýnuň dilini we terjime dilini saýlaň. Dili soň çalyşmak — «Сменить язык перевода.bat». Antiçitli onlaýn oýunlarda ulanmaň."
+ },
+ "hy": {
+  "st": "Ժամանակավոր թեստ",
+  "how": "Հիմա ընթանում է ժամանակավոր թեստավորում․ թեստավորող կարող է դառնալ յուրաքանչյուրը — խաղացեք անմիջապես դիտարկիչում, առանց տեղադրման։ Երբ խաղը թողարկվի Steam-ում և Google Play-ում, այս տարբերակը կփակվի կամ կմնա միայն դեմոն։",
+  "btn": "Դառնալ թեստավորող",
+  "hook": "Unity խաղերը քիչ են կախվում և խոսում են ձեր լեզվով։",
+  "about": "Տեղադրվում է Unity-ի մեկ խաղացողի խաղում։ Պարզեցնում է գրաֆիկան, որպեսզի խաղը սահուն աշխատի թույլ նոութբուքում, և խաղի ընթացքում թարգմանում է տեքստը ընտրված լեզվով՝ Google-ով կամ ավելի որակով DeepL-ով։",
+  "f": [
+   "Որակի կարգավորումներ",
+   "F9 / F10 փոխարկում",
+   "Թարգմանություն 20+ լեզվով",
+   "DeepL կամ Google"
+  ],
+  "uhow": "Բացեք արխիվը, գործարկեք «Установить.bat»-ը, ընտրեք խաղի .exe ֆայլը, խաղի լեզուն և թարգմանության լեզուն։ Լեզուն հետո փոխել՝ «Сменить язык перевода.bat»։ Մի օգտագործեք հակաչիթով առցանց խաղերում։"
+ },
+ "az": {
+  "st": "Müvəqqəti test",
+  "how": "Hazırda müvəqqəti test gedir: hər kəs testçi ola bilər — birbaşa brauzerdə, quraşdırmadan oynayın. Oyun Steam və Google Play-də çıxanda bu versiya bağlanacaq və ya yalnız demo qalacaq.",
+  "btn": "Testçi ol",
+  "hook": "Unity oyunları az donur və sizin dilinizdə danışır.",
+  "about": "Unity-də tək oyunçulu oyuna quraşdırılır. Zəif noutbukda oyunun rəvan işləməsi üçün qrafikanı sadələşdirir və oyun zamanı mətni seçilmiş dilə tərcümə edir — Google ilə və ya daha keyfiyyətli DeepL ilə.",
+  "f": [
+   "Keyfiyyət presetləri",
+   "F9 / F10 keçid",
+   "20+ dilə tərcümə",
+   "DeepL və ya Google"
+  ],
+  "uhow": "Arxivi açın, «Установить.bat»-ı işə salın, oyunun .exe faylını, oyunun dilini və tərcümə dilini seçin. Dili sonra dəyişmək — «Сменить язык перевода.bat». Antiçitli onlayn oyunlarda istifadə etməyin."
+ },
+ "ro": {
+  "st": "Test temporar",
+  "how": "Acum are loc un test temporar: oricine poate deveni tester — joacă direct în browser, fără instalare. Când jocul apare pe Steam și Google Play, această versiune se închide sau rămâne doar un demo.",
+  "btn": "Devino tester",
+  "hook": "Jocurile Unity merg mai fluid și vorbesc limba ta.",
+  "about": "Se instalează într-un joc single-player pe Unity. Simplifică grafica pentru ca jocul să meargă mai fluid pe un laptop slab și traduce textul în limba aleasă chiar în timpul jocului — prin Google sau, mai bine, prin DeepL.",
+  "f": [
+   "Presetări de calitate",
+   "Comutare F9 / F10",
+   "Traducere în 20+ limbi",
+   "DeepL sau Google"
+  ],
+  "uhow": "Dezarhivează, rulează „Установить.bat”, alege fișierul .exe al jocului, limba jocului și limba traducerii. Schimbi limba mai târziu — „Сменить язык перевода.bat”. Nu-l folosi în jocuri online cu anti-cheat."
+ }
+};
+  Object.keys(UPD).forEach((k) => { const u = UPD[k], d = L[k]; d.ui[14] = u.st; d.hts[5] = u.how; d.hts[6][0] = u.btn; d.ub[1] = u.hook; d.ub[2] = u.about; d.ub[3] = u.f; d.ub[5] = u.uhow; });
   /* порядок строк интерфейса — как в списке ui выше */
   const UI_KEYS = ['nav_projects', 'nav_support', 'projects_title', 'cat_all', 'cat_games', 'cat_mc', 'cat_tg', 'cat_tools', 'more', 'version', 'platforms', 'features', 'how',
     'st_live', 'st_playtest', 'st_download', 'close', 'sup_kicker', 'sup_title', 'sup_lead', 'w_stars', 'w_stars_d', 'w_mono', 'w_mono_d', 'w_crypto', 'w_crypto_d',
