@@ -222,15 +222,15 @@
     return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
   }
   const fbm = (x, y) => vnoise(x, y) * 0.55 + vnoise(x * 2.1, y * 2.1) * 0.3 + vnoise(x * 4.3, y * 4.3) * 0.15;
-  const bg = { cv: null, ctx: null, base: null, W: 0, H: 0, cell: 14, crosses: [], streaks: [], off: 0 };
+  const bg = { cv: null, ctx: null, fx: null, fctx: null, base: null, W: 0, H: 0, cell: 14, crosses: [], streaks: [] };
   function buildBg() {
-    const cv = $('#bg');
-    const W = innerWidth, H = innerHeight;
-    cv.width = W; cv.height = H;
-    bg.cv = cv; bg.ctx = cv.getContext('2d'); bg.W = W; bg.H = H;
+    const cv = $('#bg'), fx = $('#fx');
+    const W = innerWidth, H = Math.max(innerHeight, screen.height || 0);   // запас по высоте: на телефоне панель браузера прячется
+    cv.width = W; cv.height = H; fx.width = W; fx.height = H;
+    bg.cv = cv; bg.ctx = cv.getContext('2d'); bg.fx = fx; bg.fctx = fx.getContext('2d'); bg.W = W; bg.H = H;
     bg.cell = W < 700 ? 10 : 14;
     const base = document.createElement('canvas');
-    base.width = W; base.height = Math.round(H * 1.5);
+    base.width = W; base.height = H;
     const g = base.getContext('2d');
     g.fillStyle = '#050505'; g.fillRect(0, 0, base.width, base.height);
     const C = bg.cell, cols = Math.ceil(W / C), rows = Math.ceil(base.height / C);
@@ -270,26 +270,21 @@
     for (let i = 0; i < dt.length; i += 4) { const r = (Math.random() - 0.5) * 22; dt[i] += r; dt[i + 1] += r; dt[i + 2] += r; }
     g.putImageData(id, 0, 0);
     bg.base = base;
+    bg.ctx.drawImage(base, 0, 0);          // фон рисуется один раз и больше не трогается при прокрутке
     bg.crosses = [];
-    for (let k = 0; k < (W < 700 ? 12 : 26); k++) bg.crosses.push({ x: Math.random() * W, y: Math.random() * base.height, s: 2 + Math.floor(Math.random() * 3), ph: Math.random() * 6, sp: 0.5 + Math.random() * 1.5 });
+    for (let k = 0; k < (W < 700 ? 12 : 26); k++) bg.crosses.push({ x: Math.random() * W, y: Math.random() * H, s: 2 + Math.floor(Math.random() * 3), ph: Math.random() * 6, sp: 0.5 + Math.random() * 1.5 });
   }
   function drawBg(ts) {
     requestAnimationFrame(drawBg);
-    if (!bg.base) return;
-    const ctx = bg.ctx, W = bg.W, H = bg.H;
-    const maxOff = bg.base.height - H;
-    const docH = Math.max(1, document.documentElement.scrollHeight - H);
-    const target = Math.min(1, scrollY / docH) * maxOff;
-    bg.off += (target - bg.off) * 0.12;                 // фон догоняет прокрутку мягко
-    const off = bg.off;
-    ctx.drawImage(bg.base, 0, -off);
+    if (!bg.fctx) return;
+    const ctx = bg.fctx, W = bg.W, H = bg.H;
+    ctx.clearRect(0, 0, W, H);
     // мерцающие пиксельные крестики
     ctx.fillStyle = '#e8e8e4';
     bg.crosses.forEach((c) => {
       const a = REDUCED ? 1 : Math.sin(ts / 1000 * c.sp + c.ph);
       if (a < -0.2) return;
-      const s = c.s, x = Math.round(c.x), y = Math.round(c.y - off);
-      if (y < -20 || y > H + 20) return;
+      const s = c.s, x = Math.round(c.x), y = Math.round(c.y);
       ctx.globalAlpha = 0.25 + 0.75 * Math.max(0, a);
       ctx.fillRect(x - s, y - s * 3, s * 2, s * 6);
       ctx.fillRect(x - s * 3, y - s, s * 6, s * 2);
@@ -404,14 +399,16 @@
     if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet();
     if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('tile')) openSheet(e.target.dataset.open);
   });
-  addEventListener('scroll', () => $('#topbar').classList.toggle('solid', scrollY > 40), { passive: true });
+  let solid = false;
+  addEventListener('scroll', () => { const v = scrollY > 40; if (v !== solid) { solid = v; $('#topbar').classList.toggle('solid', v); } }, { passive: true });
   // иконки на первом экране слегка следуют за мышью
   addEventListener('mousemove', (e) => {
     const x = (e.clientX / innerWidth - 0.5) * 2, y = (e.clientY / innerHeight - 0.5) * 2;
     document.querySelectorAll('.icons svg').forEach((s, k) => { s.style.marginLeft = (x * (8 + k * 4)) + 'px'; s.style.marginTop = (y * (6 + k * 3)) + 'px'; });
   }, { passive: true });
   let rz = null;
-  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(buildBg, 250); });
+  let lastW = innerWidth;
+  addEventListener('resize', () => { if (innerWidth === lastW && innerHeight <= bg.H) return; lastW = innerWidth; clearTimeout(rz); rz = setTimeout(buildBg, 250); });
 
   $('#year').textContent = new Date().getFullYear();
   buildBg();
