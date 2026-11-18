@@ -20,7 +20,7 @@ const UI = {
   nav_tg: { ru: 'Telegram', uk: 'Telegram', en: 'Telegram' },
   nav_tools: { ru: 'Инструменты', uk: 'Інструменти', en: 'Tools' },
   nav_support: { ru: 'Поддержать', uk: 'Підтримати', en: 'Support' },
-  hero_eyebrow: { ru: 'Инди-студия одного человека · Украина', uk: 'Інді-студія однієї людини · Україна', en: 'A one-person indie studio · Ukraine' },
+  hero_eyebrow: { ru: 'Инди-студия одного человека', uk: 'Інді-студія однієї людини', en: 'A one-person indie studio' },
   hero_lead: {
     ru: 'Сюжетные хорроры, большие моды для Minecraft, игры и боты в Telegram, полезные утилиты. Всё придумываю, пишу и собираю сам — без издателя и без команды.',
     uk: 'Сюжетні горори, великі моди для Minecraft, ігри та боти в Telegram, корисні утиліти. Усе вигадую, пишу й збираю сам — без видавця і без команди.',
@@ -35,9 +35,9 @@ const UI = {
   st_download: { ru: 'Можно скачать', uk: 'Можна завантажити', en: 'Download' },
   sup_title: { ru: 'Поддержать разработчика', uk: 'Підтримати розробника', en: 'Support the developer' },
   sup_lead: {
-    ru: 'Я делаю всё это один и из Украины. Каждая поддержка — это новые главы, озвучка, сервера и время на то, чтобы доделать игры до Steam и Google Play. Спасибо, что вы здесь.',
-    uk: 'Я роблю все це сам і з України. Кожна підтримка — це нові розділи, озвучка, сервери й час, щоб доробити ігри до Steam і Google Play. Дякую, що ви тут.',
-    en: 'I make all of this alone, from Ukraine. Every bit of support means new chapters, voice acting, servers and the time to bring the games to Steam and Google Play. Thank you for being here.' },
+    ru: 'Я делаю всё это один. Каждая поддержка — это новые главы, озвучка, сервера и время на то, чтобы доделать игры до Steam и Google Play. Спасибо, что вы здесь.',
+    uk: 'Я роблю все це сам. Кожна підтримка — це нові розділи, озвучка, сервери й час, щоб доробити ігри до Steam і Google Play. Дякую, що ви тут.',
+    en: 'I make all of this alone. Every bit of support means new chapters, voice acting, servers and the time to bring the games to Steam and Google Play. Thank you for being here.' },
   stars_t: { ru: 'Звёзды Telegram', uk: 'Зірки Telegram', en: 'Telegram Stars' },
   stars_d: {
     ru: 'Самый простой способ: от 50 ⭐ прямо в Telegram. Ваше имя появится в игре — в списке спонсоров на экране концовки — и здесь, на стене ниже.',
