@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>YOMPIX GAMES — игры, моды и приложения</title>
+<meta name="description" content="Yompix Games: хоррор Hush Till Six, мод «Новоград» и LANTERN для Minecraft, YURK VPN в Telegram, Unity Boost RU.">
+<meta property="og:title" content="YOMPIX GAMES">
+<meta property="og:description" content="Игры, моды и приложения одного инди-разработчика.">
+<meta property="og:image" content="https://yompix.github.io/studio/img/og.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#050505">
+<link rel="icon" href="img/favicon.png">
+<link rel="preload" href="fonts/PressStart2P.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/Handjet.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css?v=21">
+</head>
+<body>
+
+<!-- живой пиксельный фон всей страницы -->
+<canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- заставка: пиксели собираются в логотип -->
+<div class="loader" id="loader" aria-hidden="true"><canvas id="loadc"></canvas></div>
+
+<header class="top" id="topbar">
+  <a class="logo" href="#" aria-label="Yompix Games"><span class="mark">Y</span><span>YOMPIX <b>GAMES</b></span></a>
+  <nav class="nav">
+    <a href="#projects" data-t="nav_projects"></a>
+    <a href="#support" class="nav-cta" data-t="nav_support"></a>
+  </nav>
+  <div class="langs" id="langs"></div>
+</header>
+
+<section class="hero" id="hero">
+  <div class="icons" aria-hidden="true">
+    <svg class="ic-gear" viewBox="0 0 64 64"><path d="M28 4h8l2 8 5 2 7-4 6 6-4 7 2 5 8 2v8l-8 2-2 5 4 7-6 6-7-4-5 2-2 8h-8l-2-8-5-2-7 4-6-6 4-7-2-5-8-2v-8l8-2 2-5-4-7 6-6 7 4 5-2zM32 22a10 10 0 1 0 0 20 10 10 0 1 0 0-20z" fill-rule="evenodd"/></svg>
+    <svg class="ic-heart" viewBox="0 0 11 10" shape-rendering="crispEdges"><path d="M1 1h3v1h1v1h1V2h1V1h3v1h1v3h-1v1H9v1H8v1H7v1H4V8H3V7H2V6H1V5H0V2h1z"/></svg>
+    <svg class="ic-cube" viewBox="0 0 64 64"><path d="M32 4 58 18v28L32 60 6 46V18zM6 18l26 14 26-14M32 32v28" fill="none" stroke-width="4" stroke-linejoin="round"/></svg>
+    <svg class="ic-clap" viewBox="0 0 72 64"><path d="M6 24h60v36H6z" fill="none" stroke-width="4"/><path d="M4 12 62 2l3 12L7 24z" fill="none" stroke-width="4"/><path d="M16 10l8 12M30 8l8 12M44 5l8 12M14 36h44M14 46h30" stroke-width="4"/></svg>
+    <svg class="ic-pad" viewBox="0 0 96 60"><path d="M22 6h52c12 0 20 14 20 32 0 12-10 18-18 12l-10-10H30L20 50C12 56 2 50 2 38 2 20 10 6 22 6z" fill="none" stroke-width="4" stroke-linejoin="round"/><path d="M22 20h6v6h6v6h-6v6h-6v-6h-6v-6h6z" stroke="none"/><path d="M66 18h6v6h-6zM74 26h6v6h-6z" stroke="none"/></svg>
+  </div>
+  <div class="slides" id="slides"></div>
+  <canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
+  <div class="thumbs" id="thumbs"></div>
+</section>
+
+<main>
+  <section class="block" id="projects">
+    <div class="block-head reveal">
+      <h2 data-t="projects_title"></h2>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="block support" id="support">
+    <div class="sup-banner pxc reveal">
+      <div class="sup-text">
+        <p class="kicker" data-t="sup_kicker"></p>
+        <h2 data-t="sup_title"></h2>
+        <p class="sup-lead" data-t="sup_lead"></p>
+      </div>
+      <div class="sup-ways" id="ways"></div>
+    </div>
+    <div class="wall pxc reveal">
+      <div class="wall-head"><span data-t="wall_title"></span><span id="walltotal"></span></div>
+      <div class="marquee" id="wall"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <a class="logo" href="#"><span class="mark">Y</span><span>YOMPIX <b>GAMES</b></span></a>
+  <div class="foot-links">
+    <a href="https://t.me/yompixgames" target="_blank" rel="noopener">Telegram</a>
+    <a href="https://yompix-games.itch.io" target="_blank" rel="noopener">itch.io</a>
+    <span class="dc"><span data-t="foot_contact"></span> <button class="dc-nick" id="dcnick" data-copynick="">yompixgames</button></span>
+  </div>
+  <p class="foot-small">© <span id="year"></span> Yompix Games · <span data-t="foot_fonts"></span></p>
+</footer>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-bg" data-close></div>
+  <article class="sheet-card pxc" role="dialog" aria-modal="true" id="sheetcard"></article>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript><p style="padding:120px 24px;text-align:center;color:#fff">Включите JavaScript, чтобы увидеть проекты. · Enable JavaScript to see the projects.</p></noscript>
+<!-- версии и ссылки на скачивание — всегда свежие, даже если браузер помнит старую страницу -->
+<script>document.write('<script src="data.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>')</script>
+<script src="i18n-cis.js?v=21"></script>
+<script src="app.js?v=21"></script>
+</body>
+</html>
