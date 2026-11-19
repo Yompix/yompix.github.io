@@ -116,7 +116,7 @@ const PROJECTS = [
   },
   {
     id: 'babelframe', cat: 'tools', featured: true, frame: true, accent: '#f0eee6',
-    name: 'BABELFRAME', version: '0.6.3', status: 'st_download',
+    name: 'BABELFRAME', version: '0.6.4', status: 'st_download',
     key: 'img/bf2-ru-3.webp', shotsByLang: { ru: ['img/bf2-ru-3.webp', 'img/bf2-ru-1.webp', 'img/bf2-ru-2.webp'], en: ['img/bf2-en-3.webp', 'img/bf2-en-1.webp', 'img/bf2-en-2.webp'] },
     type: { ru: 'Программа для Windows', uk: 'Програма для Windows', en: 'Windows app' },
     hook: { ru: 'Любая игра работает быстрее и говорит на вашем языке.', uk: 'Будь-яка гра працює швидше й говорить вашою мовою.', en: 'Any game runs faster and speaks your language.' },
@@ -124,7 +124,7 @@ const PROJECTS = [
     features: { ru: ['Сама узнаёт движок игры: Unity, Unreal, Godot, Ren’Py, RPG Maker и другие', 'Ускоряет игру настройками Windows и самого движка', 'Переводит с помощью ИИ, который понимает весь диалог и правильный род', 'Может показывать перевод прямо поверх любой игры', 'Все изменения отменяются одной кнопкой'], uk: ['Сама впізнає рушій гри: Unity, Unreal, Godot, Ren’Py, RPG Maker та інші', 'Прискорює гру налаштуваннями Windows і самого рушія', 'Перекладає за допомогою ШІ, який розуміє весь діалог і правильний рід', 'Може показувати переклад просто поверх будь-якої гри', 'Усі зміни скасовуються однією кнопкою'], en: ['Detects the game engine by itself: Unity, Unreal, Godot, Ren’Py, RPG Maker and more', 'Speeds games up through Windows and engine settings', 'Translates with AI that follows the whole conversation and gets gender right', 'Can show the translation right on top of any game', 'Every change is undone with one button'] },
     platforms: { ru: 'Windows 10 / 11', uk: 'Windows 10 / 11', en: 'Windows 10 / 11' },
     how: { ru: 'Распакуйте архив и запустите BabelFrame.exe — устанавливать ничего не нужно. Нажмите «Добавить игру», выберите файл игры, укажите, кто главный герой, и нажмите «Играть». Чтобы перевод работал даже без интернета, один раз нажмите в настройках «Скачать» в разделе «Свой ИИ на компьютере». Не используйте программу в онлайн-играх с античитом: если она его найдёт, то сама отключит всё, что меняет игру.', uk: 'Розпакуйте архів і запустіть BabelFrame.exe — встановлювати нічого не треба. Натисніть «Додати гру», виберіть файл гри, вкажіть, хто головний герой, і натисніть «Грати». Щоб переклад працював навіть без інтернету, один раз натисніть у налаштуваннях «Завантажити» в розділі «Свій ШІ на комп’ютері». Не використовуйте програму в онлайн-іграх з античитом: якщо вона його знайде, то сама вимкне все, що змінює гру.', en: 'Unzip the archive and run BabelFrame.exe — no installation needed. Press “Add game”, pick the game file, say who the main character is and press “Play”. To translate even offline, press “Download” once under “Own AI on this PC” in the settings. Don’t use it in online games with anti-cheat: if it finds one, it turns off everything that changes the game.' },
-    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/BABELFRAME-0.6.3.zip', size: '26 MB', dl: true }],
+    links: [{ t: { ru: 'Скачать для Windows', uk: 'Завантажити для Windows', en: 'Download for Windows' }, url: 'dl/BABELFRAME-0.6.4.zip', size: '26 MB', dl: true }],
   },
   {
     id: 'ub', cat: 'tools', accent: '#7be08f',
