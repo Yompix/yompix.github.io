@@ -89,7 +89,7 @@ const PROJECTS = [
   },
   {
     id: 'lantern', cat: 'mc', featured: true, frame: true, accent: '#ffa33a',
-    name: 'LANTERN', version: '2.0.1', status: 'st_download',
+    name: 'LANTERN', version: '2.0.2', status: 'st_download',
     key: 'img/lantern-1.webp', shots: ['img/lantern-1.webp', 'img/lantern-2.webp', 'img/lantern-3.webp', 'img/lantern-4.webp'],
     type: { ru: 'Игры с друзьями по сети', uk: 'Ігри з друзями по мережі', en: 'Play with friends online' },
     hook: { ru: 'Minecraft и любые игры с локальной сетью — с друзьями из других городов.', uk: 'Minecraft і будь-які ігри з локальною мережею — з друзями з інших міст.', en: 'Minecraft and any LAN game — with friends from other cities.' },
@@ -98,8 +98,8 @@ const PROJECTS = [
     platforms: { ru: 'Windows · Android', uk: 'Windows · Android', en: 'Windows · Android' },
     how: { ru: 'Установите LANTERN на компьютер или телефон, нажмите «Создать игру» и отправьте другу код. Другу нужно установить LANTERN у себя и ввести этот код.', uk: 'Встановіть LANTERN на комп’ютер або телефон, натисніть «Створити гру» і надішліть другу код. Другу треба встановити LANTERN у себе й ввести цей код.', en: 'Install LANTERN on your PC or phone, press “Create game” and send your friend the code. Your friend installs LANTERN too and enters the code.' },
     links: [
-      { t: { ru: 'Windows', uk: 'Windows', en: 'Windows' }, url: 'dl/LANTERN-2.0.1-Windows.zip', size: '40 MB', dl: true },
-      { t: { ru: 'Android', uk: 'Android', en: 'Android' }, url: 'dl/LANTERN-2.0.1.apk', size: '54 MB', dl: true },
+      { t: { ru: 'Windows', uk: 'Windows', en: 'Windows' }, url: 'dl/LANTERN-2.0.2-Windows.zip', size: '40 MB', dl: true },
+      { t: { ru: 'Android', uk: 'Android', en: 'Android' }, url: 'dl/LANTERN-2.0.2.apk', size: '54 MB', dl: true },
     ],
   },
   {
