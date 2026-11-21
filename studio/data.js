@@ -89,17 +89,17 @@ const PROJECTS = [
   },
   {
     id: 'lantern', cat: 'mc', featured: true, frame: true, accent: '#ffa33a',
-    name: 'LANTERN', version: '1.8.2', status: 'st_download',
+    name: 'LANTERN', version: '2.0.0', status: 'st_download',
     key: 'img/lantern-1.webp', shots: ['img/lantern-1.webp', 'img/lantern-2.webp', 'img/lantern-3.webp', 'img/lantern-4.webp'],
-    type: { ru: 'Приложение для Minecraft', uk: 'Застосунок для Minecraft', en: 'Minecraft app' },
-    hook: { ru: 'Играйте в Minecraft с друзьями, даже если вы в разных городах.', uk: 'Грайте в Minecraft з друзями, навіть якщо ви в різних містах.', en: 'Play Minecraft with friends, even from different cities.' },
+    type: { ru: 'Игры с друзьями по сети', uk: 'Ігри з друзями по мережі', en: 'Play with friends online' },
+    hook: { ru: 'Minecraft и любые игры с локальной сетью — с друзьями из других городов.', uk: 'Minecraft і будь-які ігри з локальною мережею — з друзями з інших міст.', en: 'Minecraft and any LAN game — with friends from other cities.' },
     about: { ru: 'Обычно, чтобы поиграть с другом в своём мире, нужен сервер или сложная настройка сети. С LANTERN достаточно нажать «Создать игру» и отправить другу короткий код — он появится в вашем мире, как будто вы сидите в одной комнате. Работает и на компьютере, и на телефоне.', uk: 'Зазвичай, щоб пограти з другом у своєму світі, потрібен сервер або складне налаштування мережі. З LANTERN досить натиснути «Створити гру» і надіслати другу короткий код — він з’явиться у вашому світі, наче ви сидите в одній кімнаті. Працює і на комп’ютері, і на телефоні.', en: 'Normally, playing in your own world with a friend needs a server or tricky network setup. With LANTERN you press “Create game” and send your friend a short code — they appear in your world as if you were in the same room. Works on both PC and phone.' },
-    features: { ru: ['Работает и с Java, и с Bedrock — компьютеры и телефоны вместе', 'Друг заходит по короткому коду или QR-коду', 'Список друзей и чат прямо в приложении', 'Копии миров, чтобы ничего не потерять'], uk: ['Працює і з Java, і з Bedrock — комп’ютери й телефони разом', 'Друг заходить за коротким кодом або QR-кодом', 'Список друзів і чат просто в застосунку', 'Копії світів, щоб нічого не втратити'], en: ['Works with both Java and Bedrock — PCs and phones together', 'Friends join with a short code or a QR code', 'Friends list and chat right in the app', 'World backups so nothing gets lost'] },
+    features: { ru: ['Любые игры по локальной сети: ПК с ПК, телефон с телефоном', 'Работает и с Java, и с Bedrock — компьютеры и телефоны вместе', 'Друг заходит по короткому коду или QR-коду', 'Список друзей и чат прямо в приложении', 'Копии миров, чтобы ничего не потерять'], uk: ['Будь-які ігри по локальній мережі: ПК з ПК, телефон з телефоном', 'Працює і з Java, і з Bedrock — комп’ютери й телефони разом', 'Друг заходить за коротким кодом або QR-кодом', 'Список друзів і чат просто в застосунку', 'Копії світів, щоб нічого не втратити'], en: ['Any LAN game: PC with PC, phone with phone', 'Works with both Java and Bedrock — PCs and phones together', 'Friends join with a short code or a QR code', 'Friends list and chat right in the app', 'World backups so nothing gets lost'] },
     platforms: { ru: 'Windows · Android', uk: 'Windows · Android', en: 'Windows · Android' },
     how: { ru: 'Установите LANTERN на компьютер или телефон, нажмите «Создать игру» и отправьте другу код. Другу нужно установить LANTERN у себя и ввести этот код.', uk: 'Встановіть LANTERN на комп’ютер або телефон, натисніть «Створити гру» і надішліть другу код. Другу треба встановити LANTERN у себе й ввести цей код.', en: 'Install LANTERN on your PC or phone, press “Create game” and send your friend the code. Your friend installs LANTERN too and enters the code.' },
     links: [
-      { t: { ru: 'Windows', uk: 'Windows', en: 'Windows' }, url: 'dl/LANTERN-1.8.2-Windows.zip', size: '38 MB', dl: true },
-      { t: { ru: 'Android', uk: 'Android', en: 'Android' }, url: 'dl/LANTERN-1.8.2.apk', size: '62 MB', dl: true },
+      { t: { ru: 'Windows', uk: 'Windows', en: 'Windows' }, url: 'dl/LANTERN-2.0.0-Windows.zip', size: '40 MB', dl: true },
+      { t: { ru: 'Android', uk: 'Android', en: 'Android' }, url: 'dl/LANTERN-2.0.0.apk', size: '54 MB', dl: true },
     ],
   },
   {
