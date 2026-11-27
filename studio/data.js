@@ -59,7 +59,7 @@ const UI = {
 const PROJECTS = [
   {
     id: 'hts', cat: 'games', featured: true, accent: '#f5c518',
-    name: 'Hush Till Six', version: '1.2.19', status: 'st_live', age: '18+',
+    name: 'Hush Till Six', version: '1.2.20', status: 'st_live', age: '18+',
     key: 'img/hts-key.webp', shots: ['img/hts-1.webp', 'img/hts-2.webp', 'img/hts-3.webp'],
     type: { ru: 'Хоррор-игра', uk: 'Хорор-гра', en: 'Horror game' },
     hook: { ru: 'Ночная смена, где нельзя отвечать на своё имя.', uk: 'Нічна зміна, де не можна відгукуватися на своє ім’я.', en: 'A night shift where you must never answer to your name.' },
