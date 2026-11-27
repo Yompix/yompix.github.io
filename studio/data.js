@@ -75,7 +75,7 @@ const PROJECTS = [
   },
   {
     id: 'novograd', cat: 'mc', featured: true, accent: '#ff4fa0',
-    name: { ru: 'Новоград: Тёмные улицы', uk: 'Новоград: Темні вулиці', en: 'Novograd: Dark Streets' }, version: '0.9.8', status: 'st_download',
+    name: { ru: 'Новоград: Тёмные улицы', uk: 'Новоград: Темні вулиці', en: 'Novograd: Dark Streets' }, version: '0.9.9', status: 'st_download',
     art: 'novograd',
     type: { ru: 'Мод для Minecraft', uk: 'Мод для Minecraft', en: 'Minecraft mod' },
     hook: { ru: 'Своя криминальная история в Minecraft — с городом, машинами и погонями.', uk: 'Власна кримінальна історія в Minecraft — з містом, машинами й погонями.', en: 'A crime story inside Minecraft — with a city, cars and chases.' },
@@ -84,8 +84,8 @@ const PROJECTS = [
     platforms: { ru: 'Minecraft Java 1.21.1 · любой лаунчер', uk: 'Minecraft Java 1.21.1 · будь-який лаунчер', en: 'Minecraft Java 1.21.1 · any launcher' },
     how: { ru: 'Скачайте архив и запустите «УСТАНОВИТЬ.bat» — он сам поставит всё нужное. Подойдёт любой лаунчер: официальный, TLauncher и другие (для Prism и Modrinth есть отдельный файл .mrpack). В игре создайте новый мир и выберите тип мира «Новоград: Город».', uk: 'Завантажте архів і запустіть «УСТАНОВИТЬ.bat» — він сам поставить усе потрібне. Підійде будь-який лаунчер: офіційний, TLauncher та інші (для Prism і Modrinth є окремий файл .mrpack). У грі створіть новий світ і виберіть тип світу «Новоград: Місто».', en: 'Download the archive and run “УСТАНОВИТЬ.bat” — it installs everything for you. Any launcher works: the official one, TLauncher and others (there’s a separate .mrpack file for Prism and Modrinth). In the game, create a new world and pick the “Novograd: City” world type.' },
     links: [
-      { t: { ru: 'Скачать (любой лаунчер)', uk: 'Завантажити (будь-який лаунчер)', en: 'Download (any launcher)' }, url: 'dl/Novograd-0.9.8.zip', size: '93 MB', dl: true },
-      { t: { ru: 'Prism / Modrinth (.mrpack)', uk: 'Prism / Modrinth (.mrpack)', en: 'Prism / Modrinth (.mrpack)' }, url: 'dl/Novograd-0.9.8.mrpack', size: '92 MB', dl: true },
+      { t: { ru: 'Скачать (любой лаунчер)', uk: 'Завантажити (будь-який лаунчер)', en: 'Download (any launcher)' }, url: 'dl/Novograd-0.9.9.zip', size: '93 MB', dl: true },
+      { t: { ru: 'Prism / Modrinth (.mrpack)', uk: 'Prism / Modrinth (.mrpack)', en: 'Prism / Modrinth (.mrpack)' }, url: 'dl/Novograd-0.9.9.mrpack', size: '92 MB', dl: true },
     ],
   },
   {
