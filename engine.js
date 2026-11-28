@@ -41,6 +41,7 @@ let uMus = null, uSfx = null;
 const escH = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // «Смена на двоих» — состояние и сид (объявлены рано: startScene и профиль ночи смотрят COOP.on); остальное — в разделе кооператива ниже
 const COOP_URL = (/[?&]coopsrv=([^&]+)/.exec(location.search) || [])[1] ? decodeURIComponent(/[?&]coopsrv=([^&]+)/.exec(location.search)[1]) : 'https://office-dreams-production.up.railway.app/hts/coop';
+const COOP_ON = false;   /* 28 ноя (владелец: «убери онлайн»): кнопки «Смена на двоих» в меню нет; код и сервер (server/htscoop.js) остались — включить: true */
 const COOP = { on: false, room: '', id: '', seed: 0, host: false, name: '', peer: '', peerOn: false, evs: null, poss: null, votes: {}, picks: {}, tugN: {}, visit: {}, here: {}, clock: {}, st: '', started: false, lobby: false };
 const CT = { 'Смена на двоих': ['Shift for two', 'Зміна на двох'], 'Создать комнату': ['Create room', 'Створити кімнату'], 'Войти по коду': ['Join with code', 'Увійти за кодом'],
   'Твоё имя': ['Your name', 'Твоє ім’я'], 'Код комнаты': ['Room code', 'Код кімнати'], 'Скажи код напарнику': ['Tell this code to your partner', 'Скажи код напарнику'],
@@ -1722,7 +1723,7 @@ function menu() {
     <nav class="mlist">
       ${save ? `<button id="mCont">${tr('Продолжить')}</button>` : ''}
       <button id="mNew">${tr(save ? 'Начать заново' : 'Начать смену')}</button>
-      <button id="mCoop">${ct('Смена на двоих')}</button>
+      ${COOP_ON ? `<button id="mCoop">${ct('Смена на двоих')}</button>` : ''}
       <button id="mGal">${tr('Концовки')}</button>
       <button id="mAch">${tr('Достижения')}</button>
       <button id="mSet">${tr('Настройки')}</button>
