@@ -188,15 +188,28 @@
   }
 
   /* ---------- поддержка ---------- */
+  // способы поддержки по странам (28 ноя, владелец): Украина — банка Monobank первой; Россия и СНГ — крипта (USDT) и звёзды Telegram; другие страны — карта (Ko-fi/PayPal).
+  // Страна — по часовому поясу (REGION); вкладками можно переключить. Пустой способ в data.js не показывается
+  const SUP_REG = { ua: 'ua', ru: 'cis', kz: 'cis', by: 'cis', kg: 'cis', uz: 'cis', tj: 'cis', tm: 'cis', am: 'cis', az: 'cis', md: 'cis' };
+  let supReg = (() => { const s = localStorage.getItem('yg_supreg'); return s === 'ua' || s === 'cis' || s === 'world' ? s : SUP_REG[REGION] || 'world'; })();
+  const SUP_ORDER = { ua: ['mono', 'stars', 'buy', 'crypto', 'channel'], cis: ['crypto', 'stars', 'channel'], world: ['world', 'stars', 'buy', 'crypto', 'channel'] };
   function renderSupport() {
-    const w = [];
-    if (SUPPORT.stars) w.push('<a class="way main pxc" href="' + SUPPORT.stars + '" target="_blank" rel="noopener"><div class="ic">★</div><div><b>' + t('w_stars') + '</b><span>' + t('w_stars_d') + '</span></div><div class="arr">→</div></a>');
-    if (SUPPORT.mono) w.push('<a class="way" href="' + SUPPORT.mono + '" target="_blank" rel="noopener"><div class="ic">₴</div><div><b>' + t('w_mono') + '</b><span>' + t('w_mono_d') + '</span></div><div class="arr">→</div></a>');
-    const wallets = [['USDT · TRC20', SUPPORT.usdt_trc20], ['TON', SUPPORT.usdt_ton], ['SOL', SUPPORT.sol]].filter((x) => x[1]);
-    if (wallets.length) w.push('<div class="way crypto"><div class="ic">◈</div><div><b>' + t('w_crypto') + '</b><span>' + t('w_crypto_d') + '</span></div><div class="addr">' +
-      wallets.map((x) => '<div><em>' + x[0] + '</em><code title="' + esc(x[1]) + '">' + esc(x[1]) + '</code><button data-copy="' + esc(x[1]) + '">' + t('copy') + '</button></div>').join('') + '</div></div>');
-    w.push('<a class="way" href="' + SUPPORT.channel + '" target="_blank" rel="noopener"><div class="ic">✈</div><div><b>' + t('w_free') + '</b><span>' + t('w_free_d') + '</span></div><div class="arr">→</div></a>');
-    $('#ways').innerHTML = w.join('');
+    const way = (href, ic, k, main) => '<a class="way' + (main ? ' main pxc' : '') + '" href="' + href + '" target="_blank" rel="noopener"><div class="ic">' + ic + '</div><div><b>' + t('w_' + k) + '</b><span>' + t('w_' + k + '_d') + '</span></div><div class="arr">→</div></a>';
+    const wallets = [['USDT · TRC20', SUPPORT.usdt_trc20], ['USDT / TON', SUPPORT.usdt_ton], ['SOL', SUPPORT.sol]].filter((x) => x[1]);
+    const W = {
+      mono: () => SUPPORT.mono && way(SUPPORT.mono, '₴', 'mono'),
+      world: () => SUPPORT.world && way(SUPPORT.world, '💳', 'world'),
+      stars: () => SUPPORT.stars && way(SUPPORT.stars, '★', 'stars'),
+      buy: () => SUPPORT.buy && way(SUPPORT.buy, '▶', 'buy'),
+      channel: () => SUPPORT.channel && way(SUPPORT.channel, '✈', 'free'),
+      crypto: () => wallets.length && '<div class="way crypto"><div class="ic">◈</div><div><b>' + t('w_crypto') + '</b><span>' + (supReg === 'cis' ? t('w_crypto_cis') + ' ' : '') + t('w_crypto_d') + '</span></div><div class="addr">' +
+        wallets.map((x) => '<div><em>' + x[0] + '</em><code title="' + esc(x[1]) + '">' + esc(x[1]) + '</code><button data-copy="' + esc(x[1]) + '">' + t('copy') + '</button></div>').join('') + '</div></div>',
+    };
+    const list = SUP_ORDER[supReg].map((k) => W[k]()).filter(Boolean);
+    if (list.length) list[0] = list[0].replace('class="way"', 'class="way main pxc"');   // первый способ своей страны — крупно
+    const tabs = '<div class="supreg">' + ['ua', 'cis', 'world'].map((r) => '<button data-supreg="' + r + '" class="' + (r === supReg ? 'on' : '') + '">' + t('reg_' + r) + '</button>').join('') + '</div><p class="supregh">' + t('reg_hint') + '</p>';
+    $('#ways').innerHTML = tabs + list.join('');
+    $('#ways').querySelectorAll('[data-supreg]').forEach((b) => { b.onclick = () => { supReg = b.dataset.supreg; localStorage.setItem('yg_supreg', supReg); renderSupport(); }; });
   }
   function renderWall() {
     const list = sponsors && sponsors.list ? sponsors.list : [];

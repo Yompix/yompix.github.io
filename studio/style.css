@@ -370,3 +370,9 @@ a.way:hover .arr { animation: nudge .9s ease-in-out infinite; }
 .dc-nick::before { content: "@"; opacity: .5; }
 .dc-nick:hover { background: #d9d9d4; }
 .foot { position: relative; background: rgba(5, 5, 5, .94); box-shadow: 0 0 0 100vmax rgba(5, 5, 5, .94); clip-path: inset(0 -100vmax -100vmax); }
+
+/* вкладки стран в «Поддержать» */
+.supreg { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 6px; }
+.supreg button { flex: 1 1 auto; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.supreg button.on { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.5); }
+.supregh { margin: 0 0 12px; opacity: .6; font-size: .9em; }

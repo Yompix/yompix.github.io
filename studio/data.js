@@ -8,7 +8,9 @@ const SUPPORT = {
   sol: '8oqrJrimPonh7F83C6pU3gxQjhV9qo5sVScbrLsWZVw1',
   usdt_trc20: '',   // USDT в сети TRON (TRC20)
   usdt_ton: '',     // USDT / TON в сети TON
-  mono: '',         // банка Monobank: https://send.monobank.ua/jar/...
+  mono: '',         // банка Monobank: https://send.monobank.ua/jar/...  (Украина — карта любого банка)
+  world: '',        // для других стран: ссылка Ko-fi / PayPal.me / Buy Me a Coffee (карта Visa/Mastercard)
+  buy: 'https://play.google.com/store/apps/details?id=com.yompix.hushtillsix',   // купить игру — тоже поддержка
   channel: 'https://t.me/yompixgames',
   discord: 'yompixgames',   // ник в Discord для связи (ссылки на профиль нет — показываем ник с кнопкой «Скопировать»)
 };
@@ -39,6 +41,15 @@ const UI = {
     en: 'Every project on this page is made by one person. Support goes to voice acting, servers and the time to bring the games to Steam and Google Play.' },
   w_stars: { ru: 'Звёзды Telegram', uk: 'Зірки Telegram', en: 'Telegram Stars' },
   w_stars_d: { ru: 'От 50 звёзд. Ваше имя попадёт в титры игры и на стену спонсоров.', uk: 'Від 50 зірок. Ваше ім’я потрапить у титри гри й на стіну спонсорів.', en: 'From 50 Stars. Your name goes into the game credits and onto the sponsor wall.' },
+  reg_ua: { ru: 'Украина', uk: 'Україна', en: 'Ukraine' },
+  reg_cis: { ru: 'Россия и СНГ', uk: 'Росія та СНД', en: 'Russia & CIS' },
+  reg_world: { ru: 'Другие страны', uk: 'Інші країни', en: 'Other countries' },
+  reg_hint: { ru: 'Способы для вашей страны — первыми.', uk: 'Способи для вашої країни — першими.', en: 'Options for your country come first.' },
+  w_world: { ru: 'Картой Visa / Mastercard', uk: 'Карткою Visa / Mastercard', en: 'Visa / Mastercard' },
+  w_world_d: { ru: 'Разовая поддержка из любой страны.', uk: 'Разова підтримка з будь-якої країни.', en: 'One-time support from anywhere in the world.' },
+  w_buy: { ru: 'Купить Hush Till Six', uk: 'Купити Hush Till Six', en: 'Buy Hush Till Six' },
+  w_buy_d: { ru: 'Игра в Google Play — лучшая поддержка, а вам — хоррор на всю ночь.', uk: 'Гра в Google Play — найкраща підтримка, а вам — хорор на всю ніч.', en: 'The game on Google Play — the best support, and a horror night for you.' },
+  w_crypto_cis: { ru: 'Из России и СНГ удобнее всего — криптовалютой (USDT) или звёздами Telegram.', uk: 'З Росії та СНД найзручніше — криптовалютою (USDT) або зірками Telegram.', en: 'From Russia & CIS the easiest way is crypto (USDT) or Telegram Stars.' },
   w_mono: { ru: 'Банка Monobank', uk: 'Банка Monobank', en: 'Monobank jar' },
   w_mono_d: { ru: 'Любой банковской картой.', uk: 'Будь-якою банківською карткою.', en: 'Any bank card.' },
   w_crypto: { ru: 'Криптовалюта', uk: 'Криптовалюта', en: 'Crypto' },
