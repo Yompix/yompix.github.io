@@ -1312,7 +1312,7 @@ function offBind() {
   L.onpointerup = e => { const d = document.pointerLockElement === L ? { moved: false } : offDrag; offDrag = null; if (d && !d.moved && shf && shf.office && offYaw > OFF_MON[0] && offYaw < OFF_MON[1]) offSet(false); };
   L.onpointerleave = () => { offEdge = 0; };
 }
-addEventListener('keydown', e => { if (!shf || !shf.office || mode !== 'shift') return; if (e.key === 'ArrowLeft' || e.key === 'a') offKeys = -1; else if (e.key === 'ArrowRight' || e.key === 'd') offKeys = 1; else return; e.stopImmediatePropagation(); e.preventDefault(); }, true);
+addEventListener('keydown', e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '') || !shf || !shf.office || mode !== 'shift') return; if (e.key === 'ArrowLeft' || e.key === 'a') offKeys = -1; else if (e.key === 'ArrowRight' || e.key === 'd') offKeys = 1; else return; e.stopImmediatePropagation(); e.preventDefault(); }, true);
 addEventListener('keyup', e => { if (/^(ArrowLeft|ArrowRight|a|d)$/.test(e.key)) offKeys = 0; }, true);
 // 21 ноя: обход пешком. Из кабинета — «Обход»: идёшь по холлу (W/S или ↑/↓ — шаг, A/D или ←/→ — поворот, мышь/палец — тянуть: поворот и шаг).
 // Стены и мебель — твёрдые (World.solids). У входа — «Запереть вход», если замок отщёлкнулся. Пока ходишь, камеры никто не смотрит:
@@ -1396,10 +1396,10 @@ function walkBind() {
     WK.tn = Math.max(-1, Math.min(1, -(e.clientX - dr.x) / (r.width * .15))) * -1; WK.mv = Math.max(-1, Math.min(1, -(e.clientY - dr.y) / (r.height * .15))); });
   L.addEventListener('pointerup', () => { mv0(); dr = null; }); L.addEventListener('pointercancel', () => { mv0(); dr = null; });
 }
-addEventListener('keydown', e => { if (!shf || !shf.office || shf.walk || mode !== 'shift') return; const k = e.key.toLowerCase();   // кабинет: E — обход (если можно по сюжету), M — мониторы
+addEventListener('keydown', e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '') || !shf || !shf.office || shf.walk || mode !== 'shift') return; const k = e.key.toLowerCase();   // кабинет: E — обход (если можно по сюжету), M — мониторы
   if ((k === 'e' || k === 'у') && !document.body.classList.contains('nowalk')) { e.stopImmediatePropagation(); e.preventDefault(); walkSet(true); }
   else if (k === 'm' || k === 'ь') { e.stopImmediatePropagation(); e.preventDefault(); offSet(false); } }, true);
-addEventListener('keydown', e => { if (!shf || !shf.walk || mode !== 'shift') return; const k = e.key.toLowerCase();
+addEventListener('keydown', e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '') || !shf || !shf.walk || mode !== 'shift') return; const k = e.key.toLowerCase();
   if (k === 'w' || k === 'arrowup' || k === 'ц') WK.mv = 1; else if (k === 's' || k === 'arrowdown' || k === 'ы') WK.mv = -1; else if (k === 'a' || k === 'arrowleft' || k === 'ф') WK.tn = -1; else if (k === 'd' || k === 'arrowright' || k === 'в') WK.tn = 1;
   else if (k === '1' || k === '2' || k === '3') { const b = $(['shL7', 'shL10', 'shLm2'][+k - 1]); if (b && !b.classList.contains('hide')) b.click(); return; }
   else if (k === 'e' || k === 'у') { const b = ['shDoor', 'shBr', 'shLobby', 'shWalk'].map(id => $(id)).find(b => b && !b.classList.contains('hide')); if (b) b.click(); return; } else return; e.stopImmediatePropagation(); e.preventDefault(); }, true);
@@ -2600,6 +2600,7 @@ addEventListener('deviceorientation', e => { if (FINE || e.gamma == null) return
   if (!tilt0) tilt0 = { a, b }; tilt0.a += (a - tilt0.a) * .004; tilt0.b += (b - tilt0.b) * .004;   // «ноль» медленно подстраивается под то, как держат телефон
   lookT.x = clamp((a - tilt0.a) / 18, -1, 1); lookT.y = clamp((b - tilt0.b) / 22, -1, 1) * (LAND ? -1 : 1); });
 document.addEventListener('keydown', e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) { if (e.key === 'Enter' && e.target.id === 'cCode') { const b = $('cJoin'); if (b) b.click(); } return; }   /* печатают в поле — горячие клавиши (F, M, O, V, пробел) не срабатывают */
   // горячие клавиши ПК: F — во весь экран, V — озвучка, M — звук, O — повернуть экран
   if (e.key === 'f' || e.key === 'F' || e.key === 'а' || e.key === 'А') { const d = document; if (DESK) DESK.full(); else if (d.fullscreenElement) d.exitFullscreen().catch(() => {}); else goFull(); }
   if (e.key === 'v' || e.key === 'V' || e.key === 'м' || e.key === 'М') setVoice(!voiceOn());
@@ -2707,8 +2708,8 @@ function coopListen() {
   const es = COOP.evs = new EventSource(`${COOP_URL}/ev?room=${COOP.room}&id=${encodeURIComponent(COOP.id)}`);
   es.onmessage = e => { let d; try { d = JSON.parse(e.data); } catch { return; }
     if (d.t === 'hello') { const p = d.peers[0]; if (p) { COOP.peer = p.name; COOP.peerOn = p.on; } coopUI(); }
-    else if (d.t === 'peer') { const back = COOP.started && !COOP.peerOn; COOP.peer = d.name; COOP.peerOn = true; if (back) coopToast(ct('Напарник снова здесь')); coopUI(); }
-    else if (d.t === 'left') { COOP.peerOn = false; if (COOP.started) coopToast(ct('Напарник отключился')); coopUI(); }
+    else if (d.t === 'peer') { const back = COOP.started && COOP.wasOff; COOP.wasOff = false; COOP.peer = d.name; COOP.peerOn = true; if (back) coopToast(ct('Напарник снова здесь')); coopUI(); }
+    else if (d.t === 'left') { COOP.peerOn = false; coopUI(); if (COOP.started) setTimeout(() => { if (!COOP.peerOn && COOP.on) { COOP.wasOff = true; coopToast(ct('Напарник отключился')); } }, 6000); }   /* короткий обрыв связи (2–5 с) — без надписи */
     else if (d.t === 'msg' && d.m) coopMsg(d.m); };
 }
 function coopMsg(m) {

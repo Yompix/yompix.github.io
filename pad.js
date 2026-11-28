@@ -101,13 +101,14 @@ const KC = { 19: 12, 20: 13, 21: 14, 22: 15, 23: 0, 66: 0, 13: 0, 4: 1, 27: 1, 8
 let bKeyT = 0;   // «Назад» пришёл клавишей — переход по истории (ниже) тот же раз не повторяет B
 const kb = [], kbL = []; let kbUsed = false, touched = false;   // kbL — нажатие держится до кадра: короткое касание клавиши (Steam Input) не теряется
 addEventListener('keydown', e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;   /* 28 ноя: в поле ввода (имя, код комнаты «Смены на двоих») WASD и стрелки — это буквы, а не управление */
   const i = KB[e.code] ?? KB[e.key] ?? (e.key && e.key !== 'Unidentified' ? null : KC[e.keyCode]); if (!e.isTrusted || i == null || e.ctrlKey || e.altKey || e.metaKey) return;
   if (i === 1) bKeyT = tnow();
   if (e.code === 'Space' || e.key === ' ') { if (!kbUsed && !layer()) return; }   // пробел в кат-сцене без кнопок — движку как было (листает реплики)
   e.preventDefault(); e.stopImmediatePropagation(); kbUsed = true;
   if (!e.repeat) kb[i] = kbL[i] = true;
 }, true);
-addEventListener('keyup', e => { const i = KB[e.code] ?? KB[e.key] ?? (e.key && e.key !== 'Unidentified' ? null : KC[e.keyCode]); if (e.isTrusted && i != null) { kb[i] = false; if (kbUsed) { e.preventDefault(); e.stopImmediatePropagation(); } } }, true);
+addEventListener('keyup', e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return; const i = KB[e.code] ?? KB[e.key] ?? (e.key && e.key !== 'Unidentified' ? null : KC[e.keyCode]); if (e.isTrusted && i != null) { kb[i] = false; if (kbUsed) { e.preventDefault(); e.stopImmediatePropagation(); } } }, true);
 addEventListener('blur', () => kb.fill(false));
 function read() {
   const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(p => p && p.connected !== false) : [];
